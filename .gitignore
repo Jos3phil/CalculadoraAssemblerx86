@@ -19,7 +19,7 @@
 *.exp
 *.map
 *.lst
-*.aps
+*.apsa
 *.res
 # Archivos temporales de Visual Studio
 *.suo
