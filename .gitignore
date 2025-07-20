@@ -1,0 +1,57 @@
+# Archivos específicos de usuario
+**/Users/
+**/users/
+**/*user*
+**/*Users*
+
+# Archivos de filtros del ensamblador
+*.filter
+**/assembler86filter*
+**/Assembler86filter*
+
+# Archivos binarios y de compilación
+*.exe
+*.obj
+*.lib
+*.dll
+*.pdb
+*.ilk
+*.exp
+*.map
+*.lst
+*.aps
+*.res
+# Archivos temporales de Visual Studio
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vcxproj.filters
+*.vcxproj.user
+*.vcxproj
+
+# Carpetas de build
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+Active Solution Platform/
+# Archivos de sistema Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Archivos temporales
+*.tmp
+*.temp
+*~
+
+# Archivos de log
+*.log
+
+# Archivos específicos que quieres excluir
+assembler86filter*
+**/assembler86filter/**
