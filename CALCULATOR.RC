@@ -1,0 +1,99 @@
+// ===============================================
+// RECURSOS DE LA CALCULADORA GRÁFICA
+// Basado en base.rc del MD5 Hasher
+// ===============================================
+
+// Definir constantes
+#define IDC_DISPLAY     1001
+#define IDC_INPUT       1002
+#define IDB_CALCULATE   1003
+#define IDC_GROUPBOX    1004
+#define IDC_STATUS      1005
+
+// Botones numéricos
+#define IDB_NUM_0       1010
+#define IDB_NUM_1       1011
+#define IDB_NUM_2       1012
+#define IDB_NUM_3       1013
+#define IDB_NUM_4       1014
+#define IDB_NUM_5       1015
+#define IDB_NUM_6       1016
+#define IDB_NUM_7       1017
+#define IDB_NUM_8       1018
+#define IDB_NUM_9       1019
+
+// Operadores
+#define IDB_ADD         1020
+#define IDB_SUB         1021
+#define IDB_MUL         1022
+#define IDB_DIV         1023
+#define IDB_EQUALS      1024
+#define IDB_CLEAR       1025
+#define IDB_QUIT        1026
+
+// Funciones científicas
+#define IDB_SIN         1030
+#define IDB_COS         1031
+#define IDB_TAN         1032
+#define IDB_LOG         1033
+#define IDB_LN          1034
+#define IDB_SQRT        1035
+
+// Diálogo principal de la calculadora
+101 DIALOGEX 0, 0, 380, 280
+CAPTION "Calculadora Científica Gráfica"
+FONT 8, "Segoe UI"
+STYLE 0x80c80880
+EXSTYLE 0x00000000
+BEGIN
+// Grupo principal
+CONTROL "", IDC_GROUPBOX, "Button", 0x50008007, 5, 5, 370, 270, 0x00000000
+
+// Pantalla de resultados
+CONTROL "", IDC_DISPLAY, "Edit", 0x50000884, 15, 20, 350, 25, 0x00000200
+
+// Campo de entrada
+CONTROL "", IDC_INPUT, "Edit", 0x50000880, 15, 50, 350, 20, 0x00000200
+
+// Fila 1: Funciones científicas
+CONTROL "", IDB_SIN, "Button", 0x10000000, 15, 80, 40, 25, 0x00000000
+CONTROL "", IDB_COS, "Button", 0x10000000, 60, 80, 40, 25, 0x00000000
+CONTROL "", IDB_TAN, "Button", 0x10000000, 105, 80, 40, 25, 0x00000000
+CONTROL "", IDB_LOG, "Button", 0x10000000, 150, 80, 40, 25, 0x00000000
+CONTROL "", IDB_LN, "Button", 0x10000000, 195, 80, 40, 25, 0x00000000
+CONTROL "", IDB_SQRT, "Button", 0x10000000, 240, 80, 40, 25, 0x00000000
+
+// Fila 2: Números 7-9 y operadores
+CONTROL "", IDB_NUM_7, "Button", 0x10000000, 15, 115, 40, 25, 0x00000000
+CONTROL "", IDB_NUM_8, "Button", 0x10000000, 60, 115, 40, 25, 0x00000000
+CONTROL "", IDB_NUM_9, "Button", 0x10000000, 105, 115, 40, 25, 0x00000000
+CONTROL "", IDB_DIV, "Button", 0x10000000, 150, 115, 40, 25, 0x00000000
+CONTROL "", IDB_CLEAR, "Button", 0x10000000, 195, 115, 85, 25, 0x00000000
+
+// Fila 3: Números 4-6 y operadores
+CONTROL "", IDB_NUM_4, "Button", 0x10000000, 15, 145, 40, 25, 0x00000000
+CONTROL "", IDB_NUM_5, "Button", 0x10000000, 60, 145, 40, 25, 0x00000000
+CONTROL "", IDB_NUM_6, "Button", 0x10000000, 105, 145, 40, 25, 0x00000000
+CONTROL "", IDB_MUL, "Button", 0x10000000, 150, 145, 40, 25, 0x00000000
+
+// Fila 4: Números 1-3 y operadores
+CONTROL "", IDB_NUM_1, "Button", 0x10000000, 15, 175, 40, 25, 0x00000000
+CONTROL "", IDB_NUM_2, "Button", 0x10000000, 60, 175, 40, 25, 0x00000000
+CONTROL "", IDB_NUM_3, "Button", 0x10000000, 105, 175, 40, 25, 0x00000000
+CONTROL "", IDB_SUB, "Button", 0x10000000, 150, 175, 40, 25, 0x00000000
+
+// Fila 5: Número 0 y operadores
+CONTROL "", IDB_NUM_0, "Button", 0x10000000, 15, 205, 85, 25, 0x00000000
+CONTROL "", IDB_ADD, "Button", 0x10000000, 105, 205, 40, 25, 0x00000000
+CONTROL "", IDB_EQUALS, "Button", 0x10000000, 150, 175, 40, 55, 0x00000000
+
+// Área de gráficos (placeholder)
+CONTROL "Área de Gráficos", 9999, "Static", 0x50000000, 200, 115, 165, 115, 0x00000000
+
+// Botones de control
+CONTROL "", IDB_CALCULATE, "Button", 0x10000000, 285, 80, 80, 25, 0x00000000
+CONTROL "", IDB_QUIT, "Button", 0x10000000, 310, 245, 55, 20, 0x00000000
+
+// Barra de estado
+CONTROL "", IDC_STATUS, "Static", 0x50000000, 15, 245, 280, 15, 0x00000000
+END
