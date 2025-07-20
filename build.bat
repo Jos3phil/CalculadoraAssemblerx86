@@ -10,17 +10,17 @@ if exist *.res del *.res
 
 REM Compilar recursos
 echo Compilando recursos...
-C:\masm32-sdk\bin\rc.exe /v calculator.rc
+C:\masm32\bin\rc.exe /v calculator.rc
 if errorlevel 1 goto error_rc
 
 REM Compilar código assembly
 echo Compilando código principal...
-C:\masm32-sdk\bin\ml.exe /c /coff /Cp /nologo calculator.asm
+C:\masm32\bin\ml.exe /c /coff /Cp /nologo calculator.asm
 if errorlevel 1 goto error_asm
 
 REM Enlazar ejecutable
 echo Enlazando ejecutable...
-C:\masm32-sdk\bin\link.exe /SUBSYSTEM:WINDOWS /RELEASE /VERSION:4.0 /OUT:calculator.exe calculator.obj calculator.res C:\masm32-sdk\lib\kernel32.lib C:\masm32-sdk\lib\user32.lib C:\masm32-sdk\lib\gdi32.lib
+C:\masm32\bin\link.exe /SUBSYSTEM:WINDOWS /RELEASE /VERSION:4.0 /OUT:calculator.exe calculator.obj calculator.res C:\masm32\lib\kernel32.lib C:\masm32\lib\user32.lib C:\masm32\lib\gdi32.lib C:\masm32\lib\comctl32.lib
 if errorlevel 1 goto error_link
 
 REM Limpiar archivos temporales

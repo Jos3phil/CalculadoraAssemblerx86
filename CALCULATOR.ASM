@@ -1,24 +1,24 @@
-Ôªø
+
 .486
 .model flat, stdcall
 option casemap :none ; case sensitive
 
 ; ===============================================
-; INCLUDES - Cambiar rutas seg√∫n tu instalaci√≥n
+; INCLUDES - Cambiar rutas seg˙n tu instalaciÛn
 ; ===============================================
-include		C:\MASM32-SDK\include\windows.inc
-include		C:\MASM32-SDK\include\kernel32.inc
-include		C:\MASM32-SDK\include\user32.inc
-include		C:\MASM32-SDK\include\gdi32.inc
-include		C:\MASM32-SDK\include\msvcrt.inc
-include		C:\MASM32-SDK\macros\macros.asm
+include		C:\masm32\include\windows.inc
+include		C:\masm32\include\kernel32.inc
+include		C:\masm32\include\user32.inc
+include		C:\masm32\include\gdi32.inc
+include		C:\masm32\include\msvcrt.inc
+include		C:\masm32\macros\macros.asm
 
-includelib	C:\MASM32-SDK\m32lib\kernel32.lib
-includelib	C:\MASM32-SDK\m32lib\user32.lib
-includelib	C:\MASM32-SDK\m32lib\gdi32.lib
-includelib	C:\MASM32-SDK\m32lib\msvcrt.lib
+includelib	C:\masm32\lib\kernel32.lib
+includelib	C:\masm32\lib\user32.lib
+includelib	C:\masm32\lib\gdi32.lib
+includelib	C:\masm32\lib\msvcrt.lib
 
-; Incluir nuestro m√≥dulo de matem√°ticas
+; Incluir nuestro mÛdulo de matem·ticas
 include mathcore.asm
 
 ; ===============================================
@@ -37,11 +37,11 @@ DoubleToString      PROTO :REAL8,:DWORD,:DWORD
 .const
 IDC_DISPLAY     equ 1001        ; Pantalla de la calculadora
 IDC_INPUT       equ 1002        ; Campo de entrada
-IDB_CALCULATE   equ 1003        ; Bot√≥n calcular
+IDB_CALCULATE   equ 1003        ; BotÛn calcular
 IDC_GROUPBOX    equ 1004        ; Grupo principal
 IDC_STATUS      equ 1005        ; Estado
 
-; Botones num√©ricos
+; Botones numÈricos
 IDB_NUM_0       equ 1010
 IDB_NUM_1       equ 1011
 IDB_NUM_2       equ 1012
@@ -62,7 +62,7 @@ IDB_EQUALS      equ 1024        ; =
 IDB_CLEAR       equ 1025        ; C
 IDB_QUIT        equ 1026        ; Salir
 
-; Funciones cient√≠ficas
+; Funciones cientÌficas
 IDB_SIN         equ 1030
 IDB_COS         equ 1031
 IDB_TAN         equ 1032
@@ -80,14 +80,14 @@ MAXSiZE         equ 256
 szResultBuffer      dd MAXSiZE dup (0)
 
 ; Textos de la interfaz
-szTitle             db "Calculadora Cient√≠fica Gr√°fica",0
-szGroupBox          db "CALCULADORA CIENT√çFICA",0
+szTitle             db "Calculadora CientÌfica Gr·fica",0
+szGroupBox          db "CALCULADORA CIENTÕFICA",0
 szCalculateBtn      db "CALCULAR",0
 szClearBtn          db "LIMPIAR",0
 szQuitBtn           db "SALIR",0
 szStatusText        db "Listo",0
 
-; Textos de botones num√©ricos
+; Textos de botones numÈricos
 szBtn0              db "0",0
 szBtn1              db "1",0
 szBtn2              db "2",0
@@ -107,15 +107,15 @@ szBtnDiv            db "/",0
 szBtnEquals         db "=",0
 szBtnClear          db "C",0
 
-; Funciones cient√≠ficas
+; Funciones cientÌficas
 szBtnSin            db "SIN",0
 szBtnCos            db "COS",0
 szBtnTan            db "TAN",0
 szBtnLog            db "LOG",0
 szBtnLn             db "LN",0
-szBtnSqrt           db "‚àö",0
+szBtnSqrt           db "?",0
 
-; Strings para funciones cient√≠ficas
+; Strings para funciones cientÌficas
 szSinFunc           db "sin(",0
 szCosFunc           db "cos(",0
 szTanFunc           db "tan(",0
@@ -125,11 +125,11 @@ szSqrtFunc          db "sqrt(",0
 
 ; Mensajes de error y estado
 szErrorTitle        db "Error",0
-szErrorDivZero      db "Error: Divisi√≥n por cero",0
+szErrorDivZero      db "Error: DivisiÛn por cero",0
 szErrorSyntax       db "Error: Sintaxis incorrecta",0
 szTestExpression    db "2+3*4",0
-szModified          db "Expresi√≥n modificada",0
-szCompleted         db "C√°lculo completado",0
+szModified          db "ExpresiÛn modificada",0
+szCompleted         db "C·lculo completado",0
 szEmpty             db 0
 szZero              db "0",0
 
@@ -145,7 +145,7 @@ dResult             real8 ?
 bHasError           db ?
 
 ; ===============================================
-; C√ìDIGO PRINCIPAL
+; C”DIGO PRINCIPAL
 ; ===============================================
 .code
 
@@ -156,7 +156,7 @@ start:
     invoke ExitProcess,eax
 
 ; ===============================================
-; FUNCI√ìN PARA CONVERTIR N√öMERO A STRING
+; FUNCI”N PARA CONVERTIR N⁄MERO A STRING
 ; ===============================================
 DoubleToString PROC dblValue:REAL8, lpszBuffer:DWORD, precision:DWORD
     ; Usar sprintf del C runtime
@@ -165,7 +165,7 @@ DoubleToString PROC dblValue:REAL8, lpszBuffer:DWORD, precision:DWORD
 DoubleToString ENDP
 
 ; ===============================================
-; FUNCI√ìN PRINCIPAL DEL DI√ÅLOGO
+; FUNCI”N PRINCIPAL DEL DI¡LOGO
 ; ===============================================
 DlgProc proc    hWin    :DWORD,
                 uMsg    :DWORD,
@@ -182,7 +182,7 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szStatusText
         invoke SetDlgItemText,hWin,IDC_INPUT,ADDR szTestExpression
         
-        ; Configurar botones num√©ricos
+        ; Configurar botones numÈricos
         invoke SetDlgItemText,hWin,IDB_NUM_0,ADDR szBtn0
         invoke SetDlgItemText,hWin,IDB_NUM_1,ADDR szBtn1
         invoke SetDlgItemText,hWin,IDB_NUM_2,ADDR szBtn2
@@ -202,7 +202,7 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDB_EQUALS,ADDR szBtnEquals
         invoke SetDlgItemText,hWin,IDB_CLEAR,ADDR szBtnClear
         
-        ; Configurar funciones cient√≠ficas
+        ; Configurar funciones cientÌficas
         invoke SetDlgItemText,hWin,IDB_SIN,ADDR szBtnSin
         invoke SetDlgItemText,hWin,IDB_COS,ADDR szBtnCos
         invoke SetDlgItemText,hWin,IDB_TAN,ADDR szBtnTan
@@ -236,7 +236,7 @@ DlgProc proc    hWin    :DWORD,
         .elseif wParam == IDB_QUIT
             invoke EndDialog,hWin,0
             
-        ; Botones num√©ricos
+        ; Botones numÈricos
         .elseif wParam == IDB_NUM_0
             invoke append_to_input, hWin, ADDR szBtn0
         .elseif wParam == IDB_NUM_1
@@ -270,7 +270,7 @@ DlgProc proc    hWin    :DWORD,
         .elseif wParam == IDB_EQUALS
             invoke calculate_expression, hWin
             
-        ; Funciones cient√≠ficas
+        ; Funciones cientÌficas
         .elseif wParam == IDB_SIN
             invoke append_to_input, hWin, ADDR szSinFunc
         .elseif wParam == IDB_COS
@@ -299,14 +299,14 @@ DlgProc	endp
 ; ===============================================
 
 calculate_expression proc hWin:DWORD
-    ; Obtener expresi√≥n de entrada
+    ; Obtener expresiÛn de entrada
     invoke GetDlgItemText,hWin,IDC_INPUT,ADDR szInputBuffer,MAXSiZE
     
-    ; Calcular usando nuestro motor matem√°tico
+    ; Calcular usando nuestro motor matem·tico
     invoke EvaluateExpression,ADDR szInputBuffer
     
-    .if eax == 1  ; √âxito
-        ; Formatear resultado usando la funci√≥n de mathcore
+    .if eax == 1  ; …xito
+        ; Formatear resultado usando la funciÛn de mathcore
         invoke format_result, ADDR szDisplayBuffer, 6
         invoke SetDlgItemText,hWin,IDC_DISPLAY,ADDR szDisplayBuffer
         invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szCompleted

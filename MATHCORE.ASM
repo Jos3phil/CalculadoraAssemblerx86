@@ -1,10 +1,10 @@
 ; ===============================================
-; MOTOR MATEMÃTICO - MATHCORE.ASM
+; MOTOR MATEMÁTICO - MATHCORE.ASM
 ; Reemplaza md5.asm con funciones de calculadora
 ; ===============================================
 
 .data?
-; Variables para cÃ¡lculos
+; Variables para cálculos
 calc_buffer     db 64 dup(?)
 result_value    real8 ?
 operand1        real8 ?
@@ -25,11 +25,11 @@ zero_string     db "0", 0
 .code
 
 ; ===============================================
-; FUNCIÃ“N PRINCIPAL DE EVALUACIÃ“N
+; FUNCIÓN PRINCIPAL DE EVALUACIÓN
 ; ===============================================
 EvaluateExpression PROC lpExpression:DWORD
-    ; Entrada: puntero a string de expresiÃ³n
-    ; Salida: EAX = 1 (Ã©xito), 0 (error)
+    ; Entrada: puntero a string de expresión
+    ; Salida: EAX = 1 (éxito), 0 (error)
     ;         Resultado en result_value
     
     pushad
@@ -38,7 +38,7 @@ EvaluateExpression PROC lpExpression:DWORD
     
     .if error_flag == 0
         popad
-        mov eax, 1          ; Ã‰xito
+        mov eax, 1          ; Éxito
         ret
     .else
         popad
@@ -51,7 +51,7 @@ EvaluateExpression ENDP
 ; PARSER SIMPLE DE EXPRESIONES
 ; ===============================================
 parse_and_calculate PROC
-    ; Parser muy bÃ¡sico - mejorar despuÃ©s
+    ; Parser muy básico - mejorar después
     LOCAL num1_str[32]:BYTE
     LOCAL num2_str[32]:BYTE
     LOCAL operator:BYTE
@@ -60,7 +60,7 @@ parse_and_calculate PROC
     lea edi, num1_str       ; CORREGIDO: usar LEA en lugar de MOV OFFSET
     xor ecx, ecx        ; Contador de caracteres
     
-    ; Extraer primer nÃºmero
+    ; Extraer primer número
 parse_first_num:
     mov al, [esi]
     .if al >= '0' && al <= '9' || al == '.'
@@ -83,7 +83,7 @@ parse_first_num:
         ret
     .endif
     
-    ; Extraer segundo nÃºmero
+    ; Extraer segundo número
     lea edi, num2_str
     xor ecx, ecx
     
@@ -99,7 +99,7 @@ parse_second_num:
     
     mov BYTE PTR [edi], 0   ; Terminar string
     
-    ; Convertir strings a nÃºmeros
+    ; Convertir strings a números
     lea eax, num1_str
     call local_string_to_double
     fstp operand1
@@ -108,7 +108,7 @@ parse_second_num:
     call local_string_to_double
     fstp operand2
     
-    ; Realizar operaciÃ³n
+    ; Realizar operación
     mov al, operator
     .if al == '+'
         call math_add
@@ -126,7 +126,7 @@ parse_second_num:
 parse_and_calculate ENDP
 
 ; ===============================================
-; OPERACIONES MATEMÃTICAS BÃSICAS
+; OPERACIONES MATEMÁTICAS BÁSICAS
 ; ===============================================
 
 math_add PROC
@@ -151,7 +151,7 @@ math_multiply PROC
 math_multiply ENDP
 
 math_divide PROC
-    ; Verificar divisiÃ³n por cero
+    ; Verificar división por cero
     fld operand2
     ftst
     fstsw ax
@@ -170,11 +170,11 @@ math_divide PROC
 math_divide ENDP
 
 ; ===============================================
-; FUNCIÃ“N AUXILIAR: CONVERTIR STRING A DOUBLE
+; FUNCIÓN AUXILIAR: CONVERTIR STRING A DOUBLE
 ; ===============================================
 local_string_to_double PROC
-    ; Convierte string a nÃºmero en pila FPU
-    ; ImplementaciÃ³n simplificada
+    ; Convierte string a número en pila FPU
+    ; Implementación simplificada
     
     LOCAL sign:DWORD
     LOCAL integer_part:DWORD
@@ -230,7 +230,7 @@ parse_decimal:
         .endif
     .endif
     
-    ; Construir nÃºmero final
+    ; Construir número final
     fild integer_part       ; Cargar parte entera
     
     .if decimal_places > 0
@@ -257,7 +257,7 @@ divide_loop:
 local_string_to_double ENDP
 
 ; ===============================================
-; FUNCIÃ“N DE FORMATO DE SALIDA
+; FUNCIÓN DE FORMATO DE SALIDA
 ; ===============================================
 format_result PROC lpBuffer:DWORD, precision:DWORD
     ; Formatear result_value a string
