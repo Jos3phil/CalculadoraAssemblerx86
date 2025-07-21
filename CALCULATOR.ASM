@@ -1,10 +1,13 @@
-
+; ===============================================
+; CALCULADORA CON MEMORIA DE RESULTADO
+; Permite operaciones continuas
+; ===============================================
 .486
 .model flat, stdcall
 option casemap :none ; case sensitive
 
 ; ===============================================
-; INCLUDES - Cambiar rutas seg鷑 tu instalaci髇
+; INCLUDES - Cambiar rutas seg煤n tu instalaci贸n
 ; ===============================================
 include		C:\masm32\include\windows.inc
 include		C:\masm32\include\kernel32.inc
@@ -18,12 +21,10 @@ includelib	C:\masm32\lib\user32.lib
 includelib	C:\masm32\lib\gdi32.lib
 includelib	C:\masm32\lib\msvcrt.lib
 
-; Incluir nuestro m骴ulo de matem醫icas
-include mathcore.asm
-
 ; ===============================================
 ; PROTOTIPOS DE FUNCIONES PROPIAS
 ; ===============================================
+
 DlgProc             PROTO :DWORD,:DWORD,:DWORD,:DWORD
 calculate_expression PROTO :DWORD
 append_to_input     PROTO :DWORD,:DWORD
@@ -31,17 +32,25 @@ clear_all           PROTO :DWORD
 clean_buffers       PROTO
 DoubleToString      PROTO :REAL8,:DWORD,:DWORD
 
-; ===============================================
-; CONSTANTES (basadas en base.rc)
-; ===============================================
-.const
-IDC_DISPLAY     equ 1001        ; Pantalla de la calculadora
-IDC_INPUT       equ 1002        ; Campo de entrada
-IDB_CALCULATE   equ 1003        ; Bot髇 calcular
-IDC_GROUPBOX    equ 1004        ; Grupo principal
-IDC_STATUS      equ 1005        ; Estado
+; Nuevos prototipos para memoria
+init_calculator_memory PROTO
+store_last_result   PROTO :REAL8
+get_last_result     PROTO
+is_continuing_calculation PROTO :DWORD
+handle_equals       PROTO :DWORD
+handle_operator_with_memory PROTO :DWORD,:DWORD
 
-; Botones num閞icos
+; Prototipos del motor matem谩tico (desde mathcore.asm)
+EvaluateExpression PROTO :DWORD
+format_result PROTO :DWORD,:DWORD
+
+.const
+IDC_DISPLAY     equ 1001
+IDC_INPUT       equ 1002
+IDB_CALCULATE   equ 1003
+IDC_GROUPBOX    equ 1004
+IDC_STATUS      equ 1005
+
 IDB_NUM_0       equ 1010
 IDB_NUM_1       equ 1011
 IDB_NUM_2       equ 1012
@@ -53,16 +62,14 @@ IDB_NUM_7       equ 1017
 IDB_NUM_8       equ 1018
 IDB_NUM_9       equ 1019
 
-; Operadores
-IDB_ADD         equ 1020        ; +
-IDB_SUB         equ 1021        ; -
-IDB_MUL         equ 1022        ; *
-IDB_DIV         equ 1023        ; /
-IDB_EQUALS      equ 1024        ; =
-IDB_CLEAR       equ 1025        ; C
-IDB_QUIT        equ 1026        ; Salir
+IDB_ADD         equ 1020
+IDB_SUB         equ 1021
+IDB_MUL         equ 1022
+IDB_DIV         equ 1023
+IDB_EQUALS      equ 1024
+IDB_CLEAR       equ 1025
+IDB_QUIT        equ 1026
 
-; Funciones cient韋icas
 IDB_SIN         equ 1030
 IDB_COS         equ 1031
 IDB_TAN         equ 1032
@@ -72,22 +79,40 @@ IDB_SQRT        equ 1035
 
 MAXSiZE         equ 256
 
-; ===============================================
-; DATOS
-; ===============================================
+; Estados de la calculadora
+CALC_STATE_NEW      equ 0   ; Nueva operaci贸n
+CALC_STATE_RESULT   equ 1   ; Mostrando resultado, esperando operador
+CALC_STATE_OPERATOR equ 2   ; Operador ingresado, esperando n煤mero
+CALC_STATE_ERROR    equ 3   ; Estado de error
+
+.data?
+; Variables principales de la calculadora (NO del motor matem谩tico)
+hInstance           dd ?
+szInputBuffer       db 265 dup (?)
+szDisplayBuffer     db 265 dup (?)
+dInputLength        dd ?
+bHasError           db ?
+
+; NUEVAS VARIABLES PARA MEMORIA
+last_result         real8 ?     ; 脷ltimo resultado calculado
+calculator_state    dd ?        ; Estado actual de la calculadora
+has_result          dd ?        ; 1 si hay un resultado v谩lido, 0 si no
+pending_operator    db ?        ; Operador pendiente
+result_displayed    dd ?        ; 1 si se est谩 mostrando un resultado
+
 .data
-; Datos de la calculadora
+; Constantes locales (no duplicar las de mathcore.asm)
 szResultBuffer      dd MAXSiZE dup (0)
 
 ; Textos de la interfaz
-szTitle             db "Calculadora Cient韋ica Gr醘ica",0
-szGroupBox          db "CALCULADORA CIENT虵ICA",0
+szTitle             db "Calculadora Cientifica",0
+szGroupBox          db "CALCULADORA CIENTIFICA",0
 szCalculateBtn      db "CALCULAR",0
 szClearBtn          db "LIMPIAR",0
 szQuitBtn           db "SALIR",0
 szStatusText        db "Listo",0
 
-; Textos de botones num閞icos
+; Textos de botones numericos
 szBtn0              db "0",0
 szBtn1              db "1",0
 szBtn2              db "2",0
@@ -107,15 +132,15 @@ szBtnDiv            db "/",0
 szBtnEquals         db "=",0
 szBtnClear          db "C",0
 
-; Funciones cient韋icas
+; Funciones cientificas
 szBtnSin            db "SIN",0
 szBtnCos            db "COS",0
 szBtnTan            db "TAN",0
 szBtnLog            db "LOG",0
 szBtnLn             db "LN",0
-szBtnSqrt           db "?",0
+szBtnSqrt           db "SQRT",0
 
-; Strings para funciones cient韋icas
+; Strings para funciones cientificas
 szSinFunc           db "sin(",0
 szCosFunc           db "cos(",0
 szTanFunc           db "tan(",0
@@ -125,47 +150,150 @@ szSqrtFunc          db "sqrt(",0
 
 ; Mensajes de error y estado
 szErrorTitle        db "Error",0
-szErrorDivZero      db "Error: Divisi髇 por cero",0
+szErrorDivZero      db "Error: Division por cero",0
 szErrorSyntax       db "Error: Sintaxis incorrecta",0
 szTestExpression    db "2+3*4",0
-szModified          db "Expresi髇 modificada",0
-szCompleted         db "C醠culo completado",0
+szModified          db "Expresion modificada",0
+szCompleted         db "Calculo completado",0
+szContinuing        db "Continuando calculo...",0  ; NUEVO
 szEmpty             db 0
 szZero              db "0",0
+szAns               db "Ans",0                      ; NUEVO
 
-; ===============================================
-; VARIABLES
-; ===============================================
-.data?
-hInstance           dd ?
-szInputBuffer       db 265 dup (?)
-szDisplayBuffer     db 265 dup (?)
-dInputLength        dd ?
-dResult             real8 ?
-bHasError           db ?
+; Incluir nuestro m贸dulo de matem谩ticas DESPU脡S de las definiciones
+include mathcore.asm
 
-; ===============================================
-; C覦IGO PRINCIPAL
-; ===============================================
 .code
 
 start:
     invoke GetModuleHandle,NULL
     mov hInstance,eax
+    
+    ; Inicializar memoria de calculadora
+    invoke init_calculator_memory
+    
     invoke DialogBoxParam,hInstance,101,0,ADDR DlgProc,0
     invoke ExitProcess,eax
 
 ; ===============================================
-; FUNCI覰 PARA CONVERTIR N贛ERO A STRING
+; INICIALIZAR MEMORIA DE LA CALCULADORA
 ; ===============================================
-DoubleToString PROC dblValue:REAL8, lpszBuffer:DWORD, precision:DWORD
-    ; Usar sprintf del C runtime
-    invoke crt_sprintf, lpszBuffer, ADDR fmt_str, dblValue
+init_calculator_memory PROC
+    ; Establecer estado inicial
+    mov calculator_state, CALC_STATE_NEW
+    mov has_result, 0
+    mov pending_operator, 0
+    mov result_displayed, 0
+    
+    ; Limpiar 煤ltimo resultado
+    fldz
+    fstp last_result
+    
     ret
-DoubleToString ENDP
+init_calculator_memory ENDP
 
 ; ===============================================
-; FUNCI覰 PRINCIPAL DEL DI罫OGO
+; GUARDAR 脷LTIMO RESULTADO
+; ===============================================
+store_last_result PROC value:REAL8
+    fld value
+    fstp last_result
+    mov has_result, 1
+    mov calculator_state, CALC_STATE_RESULT
+    mov result_displayed, 1
+    ret
+store_last_result ENDP
+
+; ===============================================
+; OBTENER 脷LTIMO RESULTADO
+; ===============================================
+get_last_result PROC
+    ; Retorna resultado en ST(0)
+    fld last_result
+    ret
+get_last_result ENDP
+
+; ===============================================
+; VERIFICAR SI EST脕 CONTINUANDO C脕LCULO
+; ===============================================
+is_continuing_calculation PROC lpInput:DWORD
+    ; Retorna 1 si la entrada sugiere continuaci贸n, 0 si no
+    
+    ; Si no hay resultado previo, no puede continuar
+    .if has_result == 0
+        mov eax, 0
+        ret
+    .endif
+    
+    ; Si est谩 mostrando resultado y se presiona operador, continuar
+    .if result_displayed == 1
+        mov esi, lpInput
+        mov al, [esi]
+        .if al == '+' || al == '-' || al == '*' || al == '/'
+            mov eax, 1
+            ret
+        .endif
+    .endif
+    
+    mov eax, 0
+    ret
+is_continuing_calculation ENDP
+
+; ===============================================
+; MANEJAR OPERADOR CON MEMORIA
+; ===============================================
+handle_operator_with_memory PROC hWin:DWORD, lpOperator:DWORD
+    LOCAL temp_str[64]:BYTE
+    
+    ; Si estamos mostrando un resultado, usar ese resultado
+    .if result_displayed == 1
+        ; Formatear 煤ltimo resultado usando funci贸n de mathcore.asm
+        invoke format_result, ADDR temp_str, 6
+        
+        ; Limpiar campo de entrada y poner el resultado
+        invoke SetDlgItemText, hWin, IDC_INPUT, ADDR temp_str
+        
+        ; Agregar el operador
+        invoke append_to_input, hWin, lpOperator
+        
+        ; Cambiar estado
+        mov calculator_state, CALC_STATE_OPERATOR
+        mov result_displayed, 0
+        
+        ; Guardar operador pendiente
+        mov esi, lpOperator
+        mov al, [esi]
+        mov pending_operator, al
+        
+        ; Actualizar estado
+        invoke SetDlgItemText, hWin, IDC_STATUS, ADDR szContinuing
+        
+    .else
+        ; Comportamiento normal - solo agregar operador
+        invoke append_to_input, hWin, lpOperator
+    .endif
+    
+    ret
+handle_operator_with_memory ENDP
+
+; ===============================================
+; MANEJAR BOT脫N EQUALS CON MEMORIA
+; ===============================================
+handle_equals PROC hWin:DWORD
+    ; Evaluar expresi贸n actual usando mathcore.asm
+    invoke calculate_expression, hWin
+    
+    ; Si fue exitoso, guardar resultado
+    ; Las variables error_flag y result_value est谩n disponibles desde mathcore.asm
+    .if error_flag == 0
+        invoke store_last_result, result_value
+    .endif
+    
+    ret
+handle_equals ENDP
+
+; ===============================================
+; DI脕LOGO PRINCIPAL MODIFICADO
 ; ===============================================
 DlgProc proc    hWin    :DWORD,
                 uMsg    :DWORD,
@@ -173,7 +301,6 @@ DlgProc proc    hWin    :DWORD,
                 lParam  :DWORD
 
     .if uMsg == WM_INITDIALOG
-        ; Configurar textos de controles
         invoke SetWindowText,hWin,ADDR szTitle
         invoke SetDlgItemText,hWin,IDC_GROUPBOX,ADDR szGroupBox
         invoke SetDlgItemText,hWin,IDB_CALCULATE,ADDR szCalculateBtn
@@ -182,7 +309,6 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szStatusText
         invoke SetDlgItemText,hWin,IDC_INPUT,ADDR szTestExpression
         
-        ; Configurar botones num閞icos
         invoke SetDlgItemText,hWin,IDB_NUM_0,ADDR szBtn0
         invoke SetDlgItemText,hWin,IDB_NUM_1,ADDR szBtn1
         invoke SetDlgItemText,hWin,IDB_NUM_2,ADDR szBtn2
@@ -194,7 +320,6 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDB_NUM_8,ADDR szBtn8
         invoke SetDlgItemText,hWin,IDB_NUM_9,ADDR szBtn9
         
-        ; Configurar operadores
         invoke SetDlgItemText,hWin,IDB_ADD,ADDR szBtnAdd
         invoke SetDlgItemText,hWin,IDB_SUB,ADDR szBtnSub
         invoke SetDlgItemText,hWin,IDB_MUL,ADDR szBtnMul
@@ -202,7 +327,6 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDB_EQUALS,ADDR szBtnEquals
         invoke SetDlgItemText,hWin,IDB_CLEAR,ADDR szBtnClear
         
-        ; Configurar funciones cient韋icas
         invoke SetDlgItemText,hWin,IDB_SIN,ADDR szBtnSin
         invoke SetDlgItemText,hWin,IDB_COS,ADDR szBtnCos
         invoke SetDlgItemText,hWin,IDB_TAN,ADDR szBtnTan
@@ -222,21 +346,26 @@ DlgProc proc    hWin    :DWORD,
                 invoke lstrlen,ADDR szInputBuffer
                 mov dInputLength,eax
                 invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szModified
+                
+                ; Si el usuario est谩 escribiendo, ya no est谩 mostrando resultado
+                mov result_displayed, 0
+                
                 invoke clean_buffers
             .endif
         .endif
         
-        ; Manejar clicks de botones
-        .if wParam == IDB_CALCULATE 
-            invoke calculate_expression, hWin
+        ; MODIFIED: Usar nueva funci贸n para equals
+        .if wParam == IDB_CALCULATE || wParam == IDB_EQUALS
+            invoke handle_equals, hWin
             
         .elseif wParam == IDB_CLEAR
             invoke clear_all, hWin
+            invoke init_calculator_memory  ; NUEVO: Reiniciar memoria
             
         .elseif wParam == IDB_QUIT
             invoke EndDialog,hWin,0
             
-        ; Botones num閞icos
+        ; Botones numericos - comportamiento normal
         .elseif wParam == IDB_NUM_0
             invoke append_to_input, hWin, ADDR szBtn0
         .elseif wParam == IDB_NUM_1
@@ -258,19 +387,17 @@ DlgProc proc    hWin    :DWORD,
         .elseif wParam == IDB_NUM_9
             invoke append_to_input, hWin, ADDR szBtn9
             
-        ; Operadores
+        ; MODIFIED: Operadores usan nueva funci贸n con memoria
         .elseif wParam == IDB_ADD
-            invoke append_to_input, hWin, ADDR szBtnAdd
+            invoke handle_operator_with_memory, hWin, ADDR szBtnAdd
         .elseif wParam == IDB_SUB
-            invoke append_to_input, hWin, ADDR szBtnSub
+            invoke handle_operator_with_memory, hWin, ADDR szBtnSub
         .elseif wParam == IDB_MUL
-            invoke append_to_input, hWin, ADDR szBtnMul
+            invoke handle_operator_with_memory, hWin, ADDR szBtnMul
         .elseif wParam == IDB_DIV
-            invoke append_to_input, hWin, ADDR szBtnDiv
-        .elseif wParam == IDB_EQUALS
-            invoke calculate_expression, hWin
+            invoke handle_operator_with_memory, hWin, ADDR szBtnDiv
             
-        ; Funciones cient韋icas
+        ; Funciones cientificas - comportamiento normal por ahora
         .elseif wParam == IDB_SIN
             invoke append_to_input, hWin, ADDR szSinFunc
         .elseif wParam == IDB_COS
@@ -283,7 +410,6 @@ DlgProc proc    hWin    :DWORD,
             invoke append_to_input, hWin, ADDR szLnFunc
         .elseif wParam == IDB_SQRT
             invoke append_to_input, hWin, ADDR szSqrtFunc
-            
         .endif
         
     .elseif	uMsg == WM_CLOSE
@@ -295,23 +421,19 @@ DlgProc proc    hWin    :DWORD,
 DlgProc	endp
 
 ; ===============================================
-; FUNCIONES AUXILIARES
+; FUNCIONES AUXILIARES MODIFICADAS
 ; ===============================================
 
 calculate_expression proc hWin:DWORD
-    ; Obtener expresi髇 de entrada
     invoke GetDlgItemText,hWin,IDC_INPUT,ADDR szInputBuffer,MAXSiZE
     
-    ; Calcular usando nuestro motor matem醫ico
     invoke EvaluateExpression,ADDR szInputBuffer
     
-    .if eax == 1  ; 蓌ito
-        ; Formatear resultado usando la funci髇 de mathcore
+    .if eax == 1
         invoke format_result, ADDR szDisplayBuffer, 6
         invoke SetDlgItemText,hWin,IDC_DISPLAY,ADDR szDisplayBuffer
         invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szCompleted
     .else
-        ; Mostrar error
         invoke SetDlgItemText,hWin,IDC_DISPLAY,ADDR szErrorSyntax
         invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szErrorSyntax
     .endif
@@ -322,35 +444,46 @@ calculate_expression endp
 append_to_input proc hWin:DWORD, lpszText:DWORD
     LOCAL szTemp[512]:BYTE
     
-    ; Obtener texto actual
+    ; Si estamos mostrando un resultado y se presiona un n煤mero,
+    ; empezar nueva expresi贸n
+    .if result_displayed == 1
+        mov esi, lpszText
+        mov al, [esi]
+        .if al >= '0' && al <= '9'
+            invoke SetDlgItemText,hWin,IDC_INPUT,lpszText
+            mov result_displayed, 0
+            mov calculator_state, CALC_STATE_NEW
+            ret
+        .endif
+    .endif
+    
     invoke GetDlgItemText,hWin,IDC_INPUT,ADDR szTemp,MAXSiZE
-    
-    ; Concatenar nuevo texto
     invoke lstrcat,ADDR szTemp,lpszText
-    
-    ; Establecer texto actualizado
     invoke SetDlgItemText,hWin,IDC_INPUT,ADDR szTemp
     
     ret
 append_to_input endp
 
 clear_all proc hWin:DWORD
-    ; Limpiar campos
     invoke SetDlgItemText,hWin,IDC_INPUT,ADDR szEmpty
     invoke SetDlgItemText,hWin,IDC_DISPLAY,ADDR szZero
     invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szStatusText
-    
     invoke clean_buffers
     ret
 clear_all endp
 
 clean_buffers proc
-    ; Limpiar buffers
     invoke RtlZeroMemory,ADDR szInputBuffer,SIZEOF szInputBuffer
     invoke RtlZeroMemory,ADDR szDisplayBuffer,SIZEOF szDisplayBuffer
     invoke RtlZeroMemory,ADDR szResultBuffer,SIZEOF szResultBuffer
     invoke RtlZeroMemory,ADDR dInputLength,SIZEOF dInputLength
     ret
 clean_buffers endp
+
+DoubleToString PROC dblValue:REAL8, lpszBuffer:DWORD, precision:DWORD
+    ; Usar la funci贸n format_result de mathcore.asm en su lugar
+    invoke format_result, lpszBuffer, precision
+    ret
+DoubleToString ENDP
 
 end start
