@@ -29,7 +29,7 @@
 *.vcxproj.filters
 *.vcxproj.user
 *.vcxproj
-
+*.aps
 # Carpetas de build
 bin/
 obj/

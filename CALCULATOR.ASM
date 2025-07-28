@@ -1,13 +1,69 @@
 ; ===============================================
-; CALCULADORA CON MEMORIA DE RESULTADO
-; Permite operaciones continuas
+; CALCULADORA CIENTÍFICA CON MEMORIA DE RESULTADO
 ; ===============================================
+; 
+; DESCRIPCIÓN:
+; Este módulo implementa una calculadora científica con interfaz gráfica que incluye
+; memoria de resultado para operaciones continuas. Permite realizar cálculos básicos
+; y funciones trigonométricas/logarítmicas, manteniendo el último resultado para
+; continuar operaciones sin necesidad de reingresarlo.
+;
+; CARACTERÍSTICAS PRINCIPALES:
+; - Operaciones aritméticas básicas (+, -, *, /)
+; - Funciones científicas (sin, cos, tan, log, ln, sqrt)
+; - Sistema de memoria que preserva el último resultado
+; - Estados de calculadora para manejo de flujo de operaciones
+; - Interfaz gráfica con botones numéricos y de operaciones
+; - Manejo de errores de sintaxis y división por cero
+;
+; ESTADOS DE LA CALCULADORA:
+; - CALC_STATE_NEW: Nueva operación iniciada
+; - CALC_STATE_RESULT: Mostrando resultado, esperando operador
+; - CALC_STATE_OPERATOR: Operador ingresado, esperando número
+; - CALC_STATE_ERROR: Estado de error
+;
+; FUNCIONES PRINCIPALES:
+; - DlgProc: Procedimiento principal del diálogo de la calculadora
+; - init_calculator_memory: Inicializa las variables de memoria
+; - store_last_result: Guarda el último resultado calculado
+; - get_last_result: Recupera el último resultado guardado
+; - handle_equals: Procesa el botón equals con memoria
+; - handle_operator_with_memory: Maneja operadores considerando resultado previo
+; - calculate_expression: Evalúa la expresión matemática
+; - append_to_input: Agrega texto al campo de entrada
+; - clear_all: Limpia todos los campos y reinicia la calculadora
+;
+; VARIABLES DE MEMORIA:
+; - last_result: Último resultado calculado (REAL8)
+; - calculator_state: Estado actual de la calculadora
+; - has_result: Indica si hay un resultado válido en memoria
+; - result_displayed: Indica si se está mostrando un resultado
+; - pending_operator: Operador pendiente de aplicar
+;
+; CONTROLES DE INTERFAZ:
+; - IDC_DISPLAY: Campo de visualización del resultado
+; - IDC_INPUT: Campo de entrada de la expresión
+; - IDC_STATUS: Barra de estado
+; - IDB_NUM_0-9: Botones numéricos
+; - IDB_ADD/SUB/MUL/DIV: Botones de operadores básicos
+; - IDB_SIN/COS/TAN/LOG/LN/SQRT: Botones de funciones científicas
+; - IDB_EQUALS: Botón de calcular/equals
+; - IDB_CLEAR: Botón de limpiar
+;
+; DEPENDENCIAS:
+; - mathcore.asm: Motor matemático para evaluación de expresiones
+; - MASM32: Librerías de Windows API
+; - Windows GDI/User32: Para interfaz gráfica
+;
+; AUTOR: [Sin especificar]
+; VERSIÓN: [Sin especificar]
+; FECHA: [Sin especificar]
 .486
 .model flat, stdcall
 option casemap :none ; case sensitive
 
 ; ===============================================
-; INCLUDES - Cambiar rutas según tu instalación
+; INCLUDES - Cambiar rutas seg�n tu instalaci�n
 ; ===============================================
 include		C:\masm32\include\windows.inc
 include		C:\masm32\include\kernel32.inc
@@ -20,6 +76,9 @@ includelib	C:\masm32\lib\kernel32.lib
 includelib	C:\masm32\lib\user32.lib
 includelib	C:\masm32\lib\gdi32.lib
 includelib	C:\masm32\lib\msvcrt.lib
+
+; Incluir nuestro m�dulo de matem�ticas
+include mathcore.asm
 
 ; ===============================================
 ; PROTOTIPOS DE FUNCIONES PROPIAS
@@ -39,10 +98,6 @@ get_last_result     PROTO
 is_continuing_calculation PROTO :DWORD
 handle_equals       PROTO :DWORD
 handle_operator_with_memory PROTO :DWORD,:DWORD
-
-; Prototipos del motor matemático (desde mathcore.asm)
-EvaluateExpression PROTO :DWORD
-format_result PROTO :DWORD,:DWORD
 
 .const
 IDC_DISPLAY     equ 1001
@@ -86,11 +141,14 @@ CALC_STATE_OPERATOR equ 2   ; Operador ingresado, esperando número
 CALC_STATE_ERROR    equ 3   ; Estado de error
 
 .data?
-; Variables principales de la calculadora (NO del motor matemático)
+
+
+; Variables principales
 hInstance           dd ?
 szInputBuffer       db 265 dup (?)
 szDisplayBuffer     db 265 dup (?)
 dInputLength        dd ?
+dResult             real8 ?
 bHasError           db ?
 
 ; NUEVAS VARIABLES PARA MEMORIA
@@ -101,7 +159,9 @@ pending_operator    db ?        ; Operador pendiente
 result_displayed    dd ?        ; 1 si se está mostrando un resultado
 
 .data
-; Constantes locales (no duplicar las de mathcore.asm)
+
+
+
 szResultBuffer      dd MAXSiZE dup (0)
 
 ; Textos de la interfaz
@@ -160,11 +220,20 @@ szEmpty             db 0
 szZero              db "0",0
 szAns               db "Ans",0                      ; NUEVO
 
-; Incluir nuestro módulo de matemáticas DESPUÉS de las definiciones
-include mathcore.asm
-
 .code
 
+; Main entry point for the calculator application
+; Initializes the application instance, sets up calculator memory,
+; creates the main dialog window, and handles application termination
+; 
+; Parameters: None
+; Returns: Application exit code
+; 
+; Flow:
+; 1. Gets the current module handle and stores it in hInstance
+; 2. Initializes calculator memory structures
+; 3. Creates and displays the main dialog (resource ID 101)
+; 4. Exits the process with the dialog's return value
 start:
     invoke GetModuleHandle,NULL
     mov hInstance,eax
@@ -247,7 +316,7 @@ handle_operator_with_memory PROC hWin:DWORD, lpOperator:DWORD
     
     ; Si estamos mostrando un resultado, usar ese resultado
     .if result_displayed == 1
-        ; Formatear último resultado usando función de mathcore.asm
+        ; Formatear último resultado
         invoke format_result, ADDR temp_str, 6
         
         ; Limpiar campo de entrada y poner el resultado
@@ -280,11 +349,10 @@ handle_operator_with_memory ENDP
 ; MANEJAR BOTÓN EQUALS CON MEMORIA
 ; ===============================================
 handle_equals PROC hWin:DWORD
-    ; Evaluar expresión actual usando mathcore.asm
+    ; Evaluar expresión actual
     invoke calculate_expression, hWin
     
     ; Si fue exitoso, guardar resultado
-    ; Las variables error_flag y result_value están disponibles desde mathcore.asm
     .if error_flag == 0
         invoke store_last_result, result_value
     .endif
@@ -295,6 +363,45 @@ handle_equals ENDP
 ; ===============================================
 ; DIÁLOGO PRINCIPAL MODIFICADO
 ; ===============================================
+;==============================================================================
+; DlgProc - Main Dialog Window Procedure
+;==============================================================================
+; Description: 
+;   Handles all window messages for the calculator dialog. Processes 
+;   initialization, user input, button clicks, and window events.
+;
+; Parameters:
+;   hWin    - Handle to the dialog window
+;   uMsg    - Message identifier (WM_INITDIALOG, WM_COMMAND, WM_CLOSE)
+;   wParam  - Additional message information (button IDs, notification codes)
+;   lParam  - Additional message information (unused in this procedure)
+;
+; Returns:
+;   EAX = 0 (standard dialog procedure return value)
+;
+; Messages Handled:
+;   WM_INITDIALOG - Initializes dialog controls with text labels
+;   WM_COMMAND    - Processes button clicks and edit control changes
+;   WM_CLOSE      - Closes the dialog window
+;
+; Button Operations:
+;   - Numeric buttons (0-9): Append digits to input field
+;   - Arithmetic operators (+, -, *, /): Handle operator input with memory
+;   - Calculate/Equals: Evaluate current expression
+;   - Clear: Reset calculator state and memory
+;   - Scientific functions (sin, cos, tan, log, ln, sqrt): Append function names
+;   - Quit: Close application
+;
+; Special Behavior:
+;   - Tracks input modifications and result display state
+;   - Implements calculator memory for chained operations
+;   - Handles EN_CHANGE notifications for input field updates
+;
+; Side Effects:
+;   - Updates dialog control text and status
+;   - Modifies global calculator state variables
+;   - Manages input buffer and calculation memory
+;==============================================================================
 DlgProc proc    hWin    :DWORD,
                 uMsg    :DWORD,
                 wParam  :DWORD,
@@ -307,7 +414,7 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDB_CLEAR,ADDR szClearBtn
         invoke SetDlgItemText,hWin,IDB_QUIT,ADDR szQuitBtn
         invoke SetDlgItemText,hWin,IDC_STATUS,ADDR szStatusText
-        invoke SetDlgItemText,hWin,IDC_INPUT,ADDR szTestExpression
+        invoke SetDlgItemText,hWin,IDC_INPUT,ADDR szZero
         
         invoke SetDlgItemText,hWin,IDB_NUM_0,ADDR szBtn0
         invoke SetDlgItemText,hWin,IDB_NUM_1,ADDR szBtn1
@@ -479,11 +586,5 @@ clean_buffers proc
     invoke RtlZeroMemory,ADDR dInputLength,SIZEOF dInputLength
     ret
 clean_buffers endp
-
-DoubleToString PROC dblValue:REAL8, lpszBuffer:DWORD, precision:DWORD
-    ; Usar la función format_result de mathcore.asm en su lugar
-    invoke format_result, lpszBuffer, precision
-    ret
-DoubleToString ENDP
 
 end start

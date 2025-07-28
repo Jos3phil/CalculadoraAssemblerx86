@@ -1,10 +1,10 @@
 ; ===============================================
-; MOTOR MATEMÁTICO - MATHCORE.ASM
+; MOTOR MATEMï¿½TICO - MATHCORE.ASM
 ; Reemplaza md5.asm con funciones de calculadora
 ; ===============================================
 
 .data?
-; Variables para cálculos
+; Variables para cï¿½lculos
 calc_buffer     db 64 dup(?)
 result_value    real8 ?
 operand1        real8 ?
@@ -25,11 +25,11 @@ zero_string     db "0", 0
 .code
 
 ; ===============================================
-; FUNCIÓN PRINCIPAL DE EVALUACIÓN
+; FUNCIï¿½N PRINCIPAL DE EVALUACIï¿½N
 ; ===============================================
 EvaluateExpression PROC lpExpression:DWORD
-    ; Entrada: puntero a string de expresión
-    ; Salida: EAX = 1 (éxito), 0 (error)
+    ; Entrada: puntero a string de expresiï¿½n
+    ; Salida: EAX = 1 (ï¿½xito), 0 (error)
     ;         Resultado en result_value
     
     pushad
@@ -38,7 +38,7 @@ EvaluateExpression PROC lpExpression:DWORD
     
     .if error_flag == 0
         popad
-        mov eax, 1          ; Éxito
+        mov eax, 1          ; ï¿½xito
         ret
     .else
         popad
@@ -51,7 +51,7 @@ EvaluateExpression ENDP
 ; PARSER SIMPLE DE EXPRESIONES
 ; ===============================================
 parse_and_calculate PROC
-    ; Parser muy básico - mejorar después
+    ; Parser muy bï¿½sico - mejorar despuï¿½s
     LOCAL num1_str[32]:BYTE
     LOCAL num2_str[32]:BYTE
     LOCAL operator:BYTE
@@ -60,7 +60,7 @@ parse_and_calculate PROC
     lea edi, num1_str       ; CORREGIDO: usar LEA en lugar de MOV OFFSET
     xor ecx, ecx        ; Contador de caracteres
     
-    ; Extraer primer número
+    ; Extraer primer nï¿½mero
 parse_first_num:
     mov al, [esi]
     .if al >= '0' && al <= '9' || al == '.'
@@ -83,7 +83,7 @@ parse_first_num:
         ret
     .endif
     
-    ; Extraer segundo número
+    ; Extraer segundo nï¿½mero
     lea edi, num2_str
     xor ecx, ecx
     
@@ -99,7 +99,7 @@ parse_second_num:
     
     mov BYTE PTR [edi], 0   ; Terminar string
     
-    ; Convertir strings a números
+    ; Convertir strings a nï¿½meros
     lea eax, num1_str
     call local_string_to_double
     fstp operand1
@@ -108,7 +108,7 @@ parse_second_num:
     call local_string_to_double
     fstp operand2
     
-    ; Realizar operación
+    ; Realizar operaciï¿½n
     mov al, operator
     .if al == '+'
         call math_add
@@ -126,7 +126,7 @@ parse_second_num:
 parse_and_calculate ENDP
 
 ; ===============================================
-; OPERACIONES MATEMÁTICAS BÁSICAS
+; OPERACIONES MATEMï¿½TICAS Bï¿½SICAS
 ; ===============================================
 
 math_add PROC
@@ -151,7 +151,7 @@ math_multiply PROC
 math_multiply ENDP
 
 math_divide PROC
-    ; Verificar división por cero
+    ; Verificar divisiï¿½n por cero
     fld operand2
     ftst
     fstsw ax
@@ -170,11 +170,11 @@ math_divide PROC
 math_divide ENDP
 
 ; ===============================================
-; FUNCIÓN AUXILIAR: CONVERTIR STRING A DOUBLE
+; FUNCIï¿½N AUXILIAR: CONVERTIR STRING A DOUBLE
 ; ===============================================
 local_string_to_double PROC
-    ; Convierte string a número en pila FPU
-    ; Implementación simplificada
+    ; Convierte string a nï¿½mero en pila FPU
+    ; Implementaciï¿½n simplificada
     
     LOCAL sign:DWORD
     LOCAL integer_part:DWORD
@@ -230,7 +230,7 @@ parse_decimal:
         .endif
     .endif
     
-    ; Construir número final
+    ; Construir nï¿½mero final
     fild integer_part       ; Cargar parte entera
     
     .if decimal_places > 0
@@ -257,8 +257,44 @@ divide_loop:
 local_string_to_double ENDP
 
 ; ===============================================
-; FUNCIÓN DE FORMATO DE SALIDA
+; FUNCIï¿½N DE FORMATO DE SALIDA
 ; ===============================================
+;==============================================================================
+; format_result PROCEDURE
+;==============================================================================
+; Description:
+;   Formats a floating-point result value into a string representation with
+;   specified precision. Handles special cases like zero values and uses
+;   C runtime sprintf for general formatting.
+;
+; Parameters:
+;   lpBuffer   - DWORD pointer to destination buffer where formatted string 
+;                will be stored
+;   precision  - DWORD value specifying the decimal precision for formatting
+;                (Note: currently not used in implementation)
+;
+; Returns:
+;   None (void procedure)
+;   Formatted string is written to the buffer pointed to by lpBuffer
+;
+; Global Variables Used:
+;   result_value - Global floating-point variable containing the value to format
+;   zero_string  - Predefined string constant for zero representation
+;   fmt_str      - Format string used with sprintf for number formatting
+;
+; Side Effects:
+;   - Modifies the FPU stack (loads and pops result_value)
+;   - Writes formatted output to the provided buffer
+;   - Uses CPU flags for floating-point status checking
+;
+; Special Cases Handled:
+;   - Zero values: Returns predefined zero string representation
+;   - Uses FPU FXAM instruction to examine floating-point value characteristics
+;
+; Dependencies:
+;   - Requires lstrcpy API function for string copying
+;   - Requires crt_sprintf C runtime function for number formatting
+;==============================================================================
 format_result PROC lpBuffer:DWORD, precision:DWORD
     ; Formatear result_value a string
     
