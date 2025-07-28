@@ -21,6 +21,7 @@
 *.lst
 *.apsa
 *.res
+*.asm
 # Archivos temporales de Visual Studio
 *.suo
 *.user
@@ -30,6 +31,9 @@
 *.vcxproj.user
 *.vcxproj
 *.aps
+*.wap
+*.rc
+*.bat
 # Carpetas de build
 bin/
 obj/
@@ -38,6 +42,7 @@ Release/
 x64/
 x86/
 Active Solution Platform/
+build.bat
 # Archivos de sistema Windows
 Thumbs.db
 ehthumbs.db

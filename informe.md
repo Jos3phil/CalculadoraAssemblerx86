@@ -1,6 +1,8 @@
 # Informe Técnico: Calculadora Científica x86 Assembly
 ## Análisis de Evolución, Implementación y Tecnologías
-
+## Estudiante : Joseph Timothy Calderon Garmendia
+## Curso : Lenguaje Ensamblandor
+## Docente: Emilio Palomino Olivera.
 ---
 
 ### Resumen Ejecutivo
