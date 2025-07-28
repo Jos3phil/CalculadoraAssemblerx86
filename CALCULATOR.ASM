@@ -70,12 +70,14 @@ include		C:\masm32\include\kernel32.inc
 include		C:\masm32\include\user32.inc
 include		C:\masm32\include\gdi32.inc
 include		C:\masm32\include\msvcrt.inc
+include		C:\masm32\include\masm32.inc
 include		C:\masm32\macros\macros.asm
 
 includelib	C:\masm32\lib\kernel32.lib
 includelib	C:\masm32\lib\user32.lib
 includelib	C:\masm32\lib\gdi32.lib
 includelib	C:\masm32\lib\msvcrt.lib
+includelib	C:\masm32\lib\masm32.lib
 
 
 include mathcore.asm
@@ -98,6 +100,21 @@ get_last_result     PROTO
 is_continuing_calculation PROTO :DWORD
 handle_equals       PROTO :DWORD
 handle_operator_with_memory PROTO :DWORD,:DWORD
+
+; Nuevos prototipos para conversiones
+decimal_to_binary   PROTO :DWORD,:DWORD
+decimal_to_octal    PROTO :DWORD,:DWORD
+decimal_to_hex      PROTO :DWORD,:DWORD
+decimal_to_bcd      PROTO :DWORD,:DWORD
+binary_to_decimal   PROTO :DWORD
+octal_to_decimal    PROTO :DWORD
+hex_to_decimal      PROTO :DWORD
+bcd_to_decimal      PROTO :DWORD
+set_input_mode      PROTO :DWORD
+validate_input_for_base PROTO :DWORD,:DWORD
+convert_current_to_base PROTO :DWORD,:DWORD
+convert_current_to_bcd PROTO :DWORD
+validate_and_append PROTO :DWORD,:DWORD
 
 .const
 IDC_DISPLAY     equ 1001
@@ -135,6 +152,25 @@ IDB_LPAREN      equ 1036  ; NUEVO: Paréntesis izquierdo (
 IDB_RPAREN      equ 1037  ; NUEVO: Paréntesis derecho )
 IDB_DECIMAL     equ 1038  ; NUEVO: Punto decimal .
 
+; NUEVO: Botones de conversión de sistemas numéricos
+IDB_TO_BIN      equ 1040  ; Convertir a binario
+IDB_TO_OCT      equ 1041  ; Convertir a octal  
+IDB_TO_HEX      equ 1042  ; Convertir a hexadecimal
+IDB_TO_BCD      equ 1043  ; Convertir a BCD
+IDB_TO_DEC      equ 1044  ; Convertir a decimal
+IDB_MODE_BIN    equ 1045  ; Modo entrada binario
+IDB_MODE_OCT    equ 1046  ; Modo entrada octal
+IDB_MODE_HEX    equ 1047  ; Modo entrada hexadecimal
+IDB_MODE_DEC    equ 1048  ; Modo entrada decimal
+
+; Botones hexadecimales
+IDB_HEX_A       equ 1050  ; Dígito A (10)
+IDB_HEX_B       equ 1051  ; Dígito B (11)
+IDB_HEX_C       equ 1052  ; Dígito C (12)
+IDB_HEX_D       equ 1053  ; Dígito D (13)
+IDB_HEX_E       equ 1054  ; Dígito E (14)
+IDB_HEX_F       equ 1055  ; Dígito F (15)
+
 
 MAXSiZE         equ 256
 
@@ -143,6 +179,18 @@ CALC_STATE_NEW      equ 0   ; Nueva operación
 CALC_STATE_RESULT   equ 1   ; Mostrando resultado, esperando operador
 CALC_STATE_OPERATOR equ 2   ; Operador ingresado, esperando número
 CALC_STATE_ERROR    equ 3   ; Estado de error
+
+; Bases numéricas
+BASE_BINARY         equ 2   ; Base binaria
+BASE_OCTAL          equ 8   ; Base octal
+BASE_DECIMAL        equ 10  ; Base decimal
+BASE_HEXADECIMAL    equ 16  ; Base hexadecimal
+
+; Modos de entrada
+MODE_DECIMAL        equ 0   ; Modo decimal
+MODE_BINARY         equ 1   ; Modo binario
+MODE_OCTAL          equ 2   ; Modo octal
+MODE_HEXADECIMAL    equ 3   ; Modo hexadecimal
 
 .data?
 
@@ -161,6 +209,11 @@ calculator_state    dd ?        ; Estado actual de la calculadora
 has_result          dd ?        ; 1 si hay un resultado válido, 0 si no
 pending_operator    db ?        ; Operador pendiente
 result_displayed    dd ?        ; 1 si se está mostrando un resultado
+
+; NUEVAS VARIABLES PARA SISTEMAS NUMÉRICOS
+current_base        dd ?        ; Base actual: 2, 8, 10, 16
+input_mode          dd ?        ; Modo de entrada actual
+conversion_buffer   db 64 dup(?) ; Buffer para conversiones
 
 .data
 
@@ -217,6 +270,33 @@ szAns               db "Ans",0
 szBtnLParen         db "(",0
 szBtnRParen         db ")",0
 szBtnDecimal        db ".",0
+
+; NUEVOS: Textos para dígitos hexadecimales
+szHexA              db "A",0
+szHexB              db "B",0
+szHexC              db "C",0
+szHexD              db "D",0
+szHexE              db "E",0
+szHexF              db "F",0
+
+; NUEVOS: Textos para conversiones
+szBtnToBin          db "→BIN",0
+szBtnToOct          db "→OCT",0
+szBtnToHex          db "→HEX",0
+szBtnToBcd          db "→BCD",0
+szBtnToDec          db "→DEC",0
+
+; NUEVOS: Textos para modos
+szBtnModeBin        db "BIN",0
+szBtnModeOct        db "OCT",0
+szBtnModeHex        db "HEX",0
+szBtnModeDec        db "DEC",0
+
+; Cadenas de formato
+szOctalFormat       db "%o",0
+szHexFormat         db "%X",0
+szDecimalFormat     db "%d",0
+szBcdSuffix         db " (BCD)",0
 ; Mensajes de error y estado
 szErrorTitle        db "Error",0
 szErrorDivZero      db "Error: Division por cero",0
@@ -262,6 +342,10 @@ init_calculator_memory PROC
     mov has_result, 0
     mov pending_operator, 0
     mov result_displayed, 0
+    
+    ; Inicializar sistema numérico
+    mov current_base, BASE_DECIMAL
+    mov input_mode, MODE_DECIMAL
     
     ; Limpiar último resultado
     fldz
@@ -455,6 +539,27 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDB_RPAREN,ADDR szBtnRParen
         invoke SetDlgItemText,hWin,IDB_DECIMAL,ADDR szBtnDecimal
 
+        ; NUEVOS: Inicializar botones de conversión
+        invoke SetDlgItemText,hWin,IDB_TO_BIN,ADDR szBtnToBin
+        invoke SetDlgItemText,hWin,IDB_TO_OCT,ADDR szBtnToOct
+        invoke SetDlgItemText,hWin,IDB_TO_HEX,ADDR szBtnToHex
+        invoke SetDlgItemText,hWin,IDB_TO_BCD,ADDR szBtnToBcd
+        invoke SetDlgItemText,hWin,IDB_TO_DEC,ADDR szBtnToDec
+
+        ; NUEVOS: Inicializar botones de modo
+        invoke SetDlgItemText,hWin,IDB_MODE_BIN,ADDR szBtnModeBin
+        invoke SetDlgItemText,hWin,IDB_MODE_OCT,ADDR szBtnModeOct
+        invoke SetDlgItemText,hWin,IDB_MODE_HEX,ADDR szBtnModeHex
+        invoke SetDlgItemText,hWin,IDB_MODE_DEC,ADDR szBtnModeDec
+
+        ; NUEVOS: Inicializar botones hexadecimales
+        invoke SetDlgItemText,hWin,IDB_HEX_A,ADDR szHexA
+        invoke SetDlgItemText,hWin,IDB_HEX_B,ADDR szHexB
+        invoke SetDlgItemText,hWin,IDB_HEX_C,ADDR szHexC
+        invoke SetDlgItemText,hWin,IDB_HEX_D,ADDR szHexD
+        invoke SetDlgItemText,hWin,IDB_HEX_E,ADDR szHexE
+        invoke SetDlgItemText,hWin,IDB_HEX_F,ADDR szHexF
+
     .elseif uMsg == WM_COMMAND
         mov eax,wParam
         mov edx,eax
@@ -540,6 +645,42 @@ DlgProc proc    hWin    :DWORD,
             invoke append_to_input, hWin, ADDR szBtnRParen
         .elseif wParam == IDB_DECIMAL
             invoke append_to_input, hWin, ADDR szBtnDecimal
+
+        ; NUEVOS: Conversiones de base
+        .elseif wParam == IDB_TO_BIN
+            invoke convert_current_to_base, hWin, BASE_BINARY
+        .elseif wParam == IDB_TO_OCT
+            invoke convert_current_to_base, hWin, BASE_OCTAL
+        .elseif wParam == IDB_TO_HEX
+            invoke convert_current_to_base, hWin, BASE_HEXADECIMAL
+        .elseif wParam == IDB_TO_BCD
+            invoke convert_current_to_bcd, hWin
+        .elseif wParam == IDB_TO_DEC
+            invoke convert_current_to_base, hWin, BASE_DECIMAL
+
+        ; NUEVOS: Modos de entrada
+        .elseif wParam == IDB_MODE_BIN
+            invoke set_input_mode, MODE_BINARY
+        .elseif wParam == IDB_MODE_OCT
+            invoke set_input_mode, MODE_OCTAL
+        .elseif wParam == IDB_MODE_HEX
+            invoke set_input_mode, MODE_HEXADECIMAL
+        .elseif wParam == IDB_MODE_DEC
+            invoke set_input_mode, MODE_DECIMAL
+
+        ; NUEVOS: Dígitos hexadecimales
+        .elseif wParam == IDB_HEX_A
+            invoke validate_and_append, hWin, ADDR szHexA
+        .elseif wParam == IDB_HEX_B
+            invoke validate_and_append, hWin, ADDR szHexB
+        .elseif wParam == IDB_HEX_C
+            invoke validate_and_append, hWin, ADDR szHexC
+        .elseif wParam == IDB_HEX_D
+            invoke validate_and_append, hWin, ADDR szHexD
+        .elseif wParam == IDB_HEX_E
+            invoke validate_and_append, hWin, ADDR szHexE
+        .elseif wParam == IDB_HEX_F
+            invoke validate_and_append, hWin, ADDR szHexF
         .endif
     .elseif	uMsg == WM_CLOSE
         invoke EndDialog,hWin,0
@@ -608,5 +749,546 @@ clean_buffers proc
     invoke RtlZeroMemory,ADDR dInputLength,SIZEOF dInputLength
     ret
 clean_buffers endp
+
+; ===============================================
+; FUNCIONES DE CONVERSIÓN DE BASES NUMÉRICAS
+; ===============================================
+
+; Establecer modo de entrada
+set_input_mode PROC mode:DWORD
+    mov eax, mode
+    mov input_mode, eax
+    ret
+set_input_mode ENDP
+
+; Validar entrada para la base actual
+validate_input_for_base PROC hWin:DWORD, lpszChar:DWORD
+    mov eax, input_mode
+    .if eax == MODE_BINARY
+        ; Solo permitir 0 y 1
+        mov esi, lpszChar
+        mov al, [esi]
+        .if al == '0' || al == '1'
+            mov eax, 1  ; Válido
+        .else
+            mov eax, 0  ; Inválido
+        .endif
+    .elseif eax == MODE_OCTAL
+        ; Solo permitir 0-7
+        mov esi, lpszChar
+        mov al, [esi]
+        .if al >= '0' && al <= '7'
+            mov eax, 1  ; Válido
+        .else
+            mov eax, 0  ; Inválido
+        .endif
+    .elseif eax == MODE_HEXADECIMAL
+        ; Permitir 0-9, A-F
+        mov esi, lpszChar
+        mov al, [esi]
+        .if (al >= '0' && al <= '9') || (al >= 'A' && al <= 'F') || (al >= 'a' && al <= 'f')
+            mov eax, 1  ; Válido
+        .else
+            mov eax, 0  ; Inválido
+        .endif
+    .else
+        ; Modo decimal - permitir 0-9 y punto decimal
+        mov eax, 1  ; Siempre válido para decimal
+    .endif
+    ret
+validate_input_for_base ENDP
+
+; Validar y agregar carácter
+validate_and_append PROC hWin:DWORD, lpszChar:DWORD
+    invoke validate_input_for_base, hWin, lpszChar
+    .if eax == 1
+        invoke append_to_input, hWin, lpszChar
+    .endif
+    ret
+validate_and_append ENDP
+
+; Convertir número actual a la base especificada
+convert_current_to_base PROC hWin:DWORD, target_base:DWORD
+    LOCAL szBuffer[64]:BYTE
+    LOCAL szInput[256]:BYTE
+    LOCAL decimal_value:DWORD
+    
+    ; Obtener el número actual del campo de entrada
+    lea eax, szInput
+    invoke GetDlgItemText, hWin, IDC_INPUT, eax, 256
+    
+    ; Convertir a decimal primero (dependiendo del modo actual)
+    mov eax, input_mode
+    .if eax == MODE_BINARY
+        lea eax, szInput
+        invoke binary_to_decimal, eax
+    .elseif eax == MODE_OCTAL
+        lea eax, szInput
+        invoke octal_to_decimal, eax
+    .elseif eax == MODE_HEXADECIMAL
+        lea eax, szInput
+        invoke hex_to_decimal, eax
+    .else
+        ; Ya está en decimal - usar función simple de conversión
+        push esi
+        push edi
+        lea esi, szInput
+        mov eax, 0
+        
+        simple_atoi_loop:
+            mov bl, [esi]
+            .if bl == 0
+                jmp simple_atoi_done
+            .endif
+            .if bl >= '0' && bl <= '9'
+                sub bl, '0'
+                imul eax, 10
+                add eax, ebx
+            .endif
+            inc esi
+            jmp simple_atoi_loop
+        
+        simple_atoi_done:
+        pop edi
+        pop esi
+    .endif
+    mov decimal_value, eax
+    
+    ; Convertir a la base objetivo
+    mov eax, target_base
+    .if eax == BASE_BINARY
+        lea eax, szBuffer
+        invoke decimal_to_binary, decimal_value, eax
+    .elseif eax == BASE_OCTAL
+        lea eax, szBuffer
+        invoke decimal_to_octal, decimal_value, eax
+    .elseif eax == BASE_HEXADECIMAL
+        lea eax, szBuffer
+        invoke decimal_to_hex, decimal_value, eax
+    .else
+        ; Base decimal - usar conversión simple
+        push ebx
+        push ecx
+        push edx
+        
+        mov eax, decimal_value
+        lea edi, szBuffer
+        mov ecx, 0  ; contador de dígitos
+        
+        ; Caso especial para cero
+        .if eax == 0
+            mov BYTE PTR [edi], '0'
+            mov BYTE PTR [edi+1], 0
+            jmp done_decimal
+        .endif
+        
+        ; Convertir a decimal
+        decimal_loop:
+            .if eax == 0
+                jmp reverse_decimal
+            .endif
+            
+            mov edx, 0
+            mov ebx, 10
+            div ebx  ; eax = eax/10, edx = resto
+            
+            add dl, '0'  ; convertir a ASCII
+            push edx     ; guardar dígito
+            inc ecx      ; incrementar contador
+            jmp decimal_loop
+        
+        reverse_decimal:
+            ; Escribir dígitos en orden correcto
+            mov ebx, 0
+            reverse_decimal_loop:
+                .if ecx == 0
+                    jmp done_decimal
+                .endif
+                pop edx
+                mov [edi+ebx], dl
+                inc ebx
+                dec ecx
+                jmp reverse_decimal_loop
+        
+        done_decimal:
+            mov BYTE PTR [edi+ebx], 0  ; null terminator
+            
+        pop edx
+        pop ecx
+        pop ebx
+    .endif
+    
+    ; Mostrar resultado
+    lea eax, szBuffer
+    invoke SetDlgItemText, hWin, IDC_DISPLAY, eax
+    ret
+convert_current_to_base ENDP
+
+; Convertir a BCD (implementación básica)
+convert_current_to_bcd PROC hWin:DWORD
+    LOCAL szBuffer[64]:BYTE
+    LOCAL szInput[256]:BYTE
+    
+    ; Obtener número y convertir a BCD (simplificado)
+    lea eax, szInput
+    invoke GetDlgItemText, hWin, IDC_INPUT, eax, 256
+    lea eax, szBuffer
+    lea edx, szInput
+    invoke lstrcpy, eax, edx  ; Por ahora, copia simple
+    lea eax, szBuffer
+    invoke lstrcat, eax, ADDR szBcdSuffix
+    lea eax, szBuffer
+    invoke SetDlgItemText, hWin, IDC_DISPLAY, eax
+    ret
+convert_current_to_bcd ENDP
+
+; Funciones de conversión básicas (implementaciones simplificadas por ahora)
+decimal_to_binary PROC value:DWORD, buffer:DWORD
+    ; Implementación básica - convertir decimal a binario
+    push ebx
+    push ecx
+    push edx
+    
+    mov eax, value
+    mov edi, buffer
+    mov ecx, 0  ; contador de dígitos
+    
+    ; Caso especial para cero
+    .if eax == 0
+        mov BYTE PTR [edi], '0'
+        mov BYTE PTR [edi+1], 0
+        jmp done_binary
+    .endif
+    
+    ; Convertir a binario
+    binary_loop:
+        .if eax == 0
+            jmp reverse_binary
+        .endif
+        
+        mov edx, 0
+        mov ebx, 2
+        div ebx  ; eax = eax/2, edx = resto
+        
+        add dl, '0'  ; convertir a ASCII
+        push edx     ; guardar dígito
+        inc ecx      ; incrementar contador
+        jmp binary_loop
+    
+    reverse_binary:
+        ; Escribir dígitos en orden correcto
+        mov ebx, 0
+        reverse_loop:
+            .if ecx == 0
+                jmp done_binary
+            .endif
+            pop edx
+            mov [edi+ebx], dl
+            inc ebx
+            dec ecx
+            jmp reverse_loop
+    
+    done_binary:
+        mov BYTE PTR [edi+ebx], 0  ; null terminator
+        
+    pop edx
+    pop ecx
+    pop ebx
+    ret
+decimal_to_binary ENDP
+
+decimal_to_octal PROC value:DWORD, buffer:DWORD
+    ; Convertir a octal usando conversión manual
+    push ebx
+    push ecx
+    push edx
+    
+    mov eax, value
+    mov edi, buffer
+    mov ecx, 0  ; contador de dígitos
+    
+    ; Caso especial para cero
+    .if eax == 0
+        mov BYTE PTR [edi], '0'
+        mov BYTE PTR [edi+1], 0
+        jmp done_octal
+    .endif
+    
+    ; Convertir a octal
+    octal_loop:
+        .if eax == 0
+            jmp reverse_octal
+        .endif
+        
+        mov edx, 0
+        mov ebx, 8
+        div ebx  ; eax = eax/8, edx = resto
+        
+        add dl, '0'  ; convertir a ASCII
+        push edx     ; guardar dígito
+        inc ecx      ; incrementar contador
+        jmp octal_loop
+    
+    reverse_octal:
+        ; Escribir dígitos en orden correcto
+        mov ebx, 0
+        reverse_octal_loop:
+            .if ecx == 0
+                jmp done_octal
+            .endif
+            pop edx
+            mov [edi+ebx], dl
+            inc ebx
+            dec ecx
+            jmp reverse_octal_loop
+    
+    done_octal:
+        mov BYTE PTR [edi+ebx], 0  ; null terminator
+        
+    pop edx
+    pop ecx
+    pop ebx
+    ret
+decimal_to_octal ENDP
+
+decimal_to_hex PROC value:DWORD, buffer:DWORD
+    ; Convertir a hexadecimal usando conversión manual
+    push ebx
+    push ecx
+    push edx
+    
+    mov eax, value
+    mov edi, buffer
+    mov ecx, 0  ; contador de dígitos
+    
+    ; Caso especial para cero
+    .if eax == 0
+        mov BYTE PTR [edi], '0'
+        mov BYTE PTR [edi+1], 0
+        jmp done_hex
+    .endif
+    
+    ; Convertir a hexadecimal
+    hex_loop:
+        .if eax == 0
+            jmp reverse_hex
+        .endif
+        
+        mov edx, 0
+        mov ebx, 16
+        div ebx  ; eax = eax/16, edx = resto
+        
+        .if edx < 10
+            add dl, '0'  ; 0-9
+        .else
+            add dl, 'A' - 10  ; A-F
+        .endif
+        
+        push edx     ; guardar dígito
+        inc ecx      ; incrementar contador
+        jmp hex_loop
+    
+    reverse_hex:
+        ; Escribir dígitos en orden correcto
+        mov ebx, 0
+        reverse_hex_loop:
+            .if ecx == 0
+                jmp done_hex
+            .endif
+            pop edx
+            mov [edi+ebx], dl
+            inc ebx
+            dec ecx
+            jmp reverse_hex_loop
+    
+    done_hex:
+        mov BYTE PTR [edi+ebx], 0  ; null terminator
+        
+    pop edx
+    pop ecx
+    pop ebx
+    ret
+decimal_to_hex ENDP
+
+decimal_to_bcd PROC value:DWORD, buffer:DWORD
+    ; Implementación básica BCD - igual que decimal por ahora
+    push ebx
+    push ecx
+    push edx
+    
+    mov eax, value
+    mov edi, buffer
+    mov ecx, 0  ; contador de dígitos
+    
+    ; Caso especial para cero
+    .if eax == 0
+        mov BYTE PTR [edi], '0'
+        mov BYTE PTR [edi+1], 0
+        jmp done_bcd
+    .endif
+    
+    ; Convertir a BCD (simplificado como decimal)
+    bcd_loop:
+        .if eax == 0
+            jmp reverse_bcd
+        .endif
+        
+        mov edx, 0
+        mov ebx, 10
+        div ebx  ; eax = eax/10, edx = resto
+        
+        add dl, '0'  ; convertir a ASCII
+        push edx     ; guardar dígito
+        inc ecx      ; incrementar contador
+        jmp bcd_loop
+    
+    reverse_bcd:
+        ; Escribir dígitos en orden correcto
+        mov ebx, 0
+        reverse_bcd_loop:
+            .if ecx == 0
+                jmp done_bcd
+            .endif
+            pop edx
+            mov [edi+ebx], dl
+            inc ebx
+            dec ecx
+            jmp reverse_bcd_loop
+    
+    done_bcd:
+        mov BYTE PTR [edi+ebx], 0  ; null terminator
+        
+    pop edx
+    pop ecx
+    pop ebx
+    ret
+decimal_to_bcd ENDP
+
+; Funciones de conversión desde otras bases
+binary_to_decimal PROC binary_str:DWORD
+    ; Convertir binario a decimal
+    mov esi, binary_str
+    mov eax, 0  ; resultado
+    mov ebx, 1  ; potencia de 2
+    
+    ; Ir al final de la cadena
+    invoke lstrlen, esi
+    add esi, eax
+    dec esi  ; último carácter
+    
+    binary_to_dec_loop:
+        mov cl, [esi]
+        .if cl == 0
+            jmp binary_done
+        .endif
+        .if cl == '1'
+            add eax, ebx
+        .endif
+        shl ebx, 1  ; multiplicar por 2
+        dec esi
+        cmp esi, binary_str
+        jae binary_to_dec_loop
+    
+    binary_done:
+    ret
+binary_to_decimal ENDP
+
+octal_to_decimal PROC octal_str:DWORD
+    ; Usar función de conversión manual
+    mov esi, octal_str
+    mov eax, 0  ; resultado
+    mov ebx, 1  ; potencia de 8
+    
+    ; Ir al final de la cadena
+    invoke lstrlen, esi
+    add esi, eax
+    dec esi  ; último carácter
+    
+    octal_to_dec_loop:
+        mov cl, [esi]
+        .if cl == 0
+            jmp octal_done
+        .endif
+        .if cl >= '0' && cl <= '7'
+            sub cl, '0'
+            push eax
+            mov eax, 0
+            mov al, cl
+            mul ebx  ; multiplicar dígito por potencia
+            pop edx  ; recuperar resultado anterior
+            add eax, edx  ; sumar al resultado
+            push eax
+            mov eax, ebx
+            mov edx, 8
+            mul edx  ; multiplicar potencia por 8
+            mov ebx, eax
+            pop eax
+        .endif
+        dec esi
+        cmp esi, octal_str
+        jae octal_to_dec_loop
+    
+    octal_done:
+    ret
+octal_to_decimal ENDP
+
+hex_to_decimal PROC hex_str:DWORD
+    ; Convertir hexadecimal a decimal
+    mov esi, hex_str
+    mov eax, 0
+    
+    hex_to_dec_loop:
+        mov cl, [esi]
+        .if cl == 0
+            jmp hex_done
+        .endif
+        
+        shl eax, 4  ; multiplicar por 16
+        
+        .if cl >= '0' && cl <= '9'
+            sub cl, '0'
+            add eax, ecx
+        .elseif cl >= 'A' && cl <= 'F'
+            sub cl, 'A'
+            add cl, 10
+            add eax, ecx
+        .elseif cl >= 'a' && cl <= 'f'
+            sub cl, 'a'
+            add cl, 10
+            add eax, ecx
+        .endif
+        
+        inc esi
+        jmp hex_to_dec_loop
+    
+    hex_done:
+    ret
+hex_to_decimal ENDP
+
+bcd_to_decimal PROC bcd_str:DWORD
+    ; Conversión BCD simplificada - usar función simple
+    push esi
+    push edi
+    mov esi, bcd_str
+    mov eax, 0
+    
+    simple_bcd_to_dec_loop:
+        mov bl, [esi]
+        .if bl == 0
+            jmp simple_bcd_to_dec_done
+        .endif
+        .if bl >= '0' && bl <= '9'
+            sub bl, '0'
+            imul eax, 10
+            add eax, ebx
+        .endif
+        inc esi
+        jmp simple_bcd_to_dec_loop
+    
+    simple_bcd_to_dec_done:
+    pop edi
+    pop esi
+    ret
+bcd_to_decimal ENDP
 
 end start

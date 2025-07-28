@@ -1,5 +1,5 @@
 // ===============================================
-// RECURSOS DE LA CALCULADORA GR�FICA
+// RECURSOS DE LA CALCULADORA GRAFICA
 // Basado en base.rc del MD5 Hasher
 // ===============================================
 
@@ -44,15 +44,36 @@
 #define IDB_RPAREN      1037
 #define IDB_DECIMAL     1038
 
-// Di�logo principal de la calculadora
-101 DIALOGEX 0, 0, 380, 280
-CAPTION "Calculadora Cient�fica Gr�fica"
+// NUEVOS: Conversiones de base
+#define IDB_TO_BIN      1040
+#define IDB_TO_OCT      1041
+#define IDB_TO_HEX      1042
+#define IDB_TO_BCD      1043
+#define IDB_TO_DEC      1044
+
+// NUEVOS: Modos de entrada
+#define IDB_MODE_BIN    1045
+#define IDB_MODE_OCT    1046
+#define IDB_MODE_HEX    1047
+#define IDB_MODE_DEC    1048
+
+// NUEVOS: Dígitos hexadecimales
+#define IDB_HEX_A       1050
+#define IDB_HEX_B       1051
+#define IDB_HEX_C       1052
+#define IDB_HEX_D       1053
+#define IDB_HEX_E       1054
+#define IDB_HEX_F       1055
+
+// Dialogo principal de la calculadora
+101 DIALOGEX 0, 0, 480, 320
+CAPTION "Calculadora Cientifica con Conversiones"
 FONT 8, "Segoe UI"
 STYLE 0x80c80880
 EXSTYLE 0x00000000
 BEGIN
 // Grupo principal
-CONTROL "", IDC_GROUPBOX, "Button", 0x50008007, 5, 5, 370, 270, 0x00000000
+CONTROL "", IDC_GROUPBOX, "Button", 0x50008007, 5, 5, 470, 310, 0x00000000
 
 // Pantalla de resultados
 CONTROL "", IDC_DISPLAY, "Edit", 0x50000884, 15, 20, 350, 25, 0x00000200
@@ -98,10 +119,36 @@ CONTROL "", IDB_EQUALS, "Button", 0x10000000, 240, 175, 40, 55, 0x00000000
 // Área de gráficos (placeholder)
 CONTROL "Área de Gráficos", 9999, "Static", 0x50000000, 290, 115, 75, 115, 0x00000000
 
+// NUEVOS: Sección de conversiones de base
+CONTROL "Conversiones", 9998, "Static", 0x50000000, 380, 80, 90, 15, 0x00000000
+
+// Botones de conversión
+CONTROL "", IDB_TO_BIN, "Button", 0x10000000, 380, 100, 40, 20, 0x00000000
+CONTROL "", IDB_TO_OCT, "Button", 0x10000000, 425, 100, 40, 20, 0x00000000
+CONTROL "", IDB_TO_HEX, "Button", 0x10000000, 380, 125, 40, 20, 0x00000000
+CONTROL "", IDB_TO_BCD, "Button", 0x10000000, 425, 125, 40, 20, 0x00000000
+CONTROL "", IDB_TO_DEC, "Button", 0x10000000, 380, 150, 40, 20, 0x00000000
+
+// Modos de entrada
+CONTROL "Modo", 9997, "Static", 0x50000000, 380, 180, 90, 15, 0x00000000
+CONTROL "", IDB_MODE_DEC, "Button", 0x10000000, 380, 200, 40, 20, 0x00000000
+CONTROL "", IDB_MODE_BIN, "Button", 0x10000000, 425, 200, 40, 20, 0x00000000
+CONTROL "", IDB_MODE_OCT, "Button", 0x10000000, 380, 225, 40, 20, 0x00000000
+CONTROL "", IDB_MODE_HEX, "Button", 0x10000000, 425, 225, 40, 20, 0x00000000
+
+// Dígitos hexadecimales
+CONTROL "Hex", 9996, "Static", 0x50000000, 380, 255, 90, 15, 0x00000000
+CONTROL "", IDB_HEX_A, "Button", 0x10000000, 380, 275, 25, 20, 0x00000000
+CONTROL "", IDB_HEX_B, "Button", 0x10000000, 410, 275, 25, 20, 0x00000000
+CONTROL "", IDB_HEX_C, "Button", 0x10000000, 440, 275, 25, 20, 0x00000000
+CONTROL "", IDB_HEX_D, "Button", 0x10000000, 380, 300, 25, 20, 0x00000000
+CONTROL "", IDB_HEX_E, "Button", 0x10000000, 410, 300, 25, 20, 0x00000000
+CONTROL "", IDB_HEX_F, "Button", 0x10000000, 440, 300, 25, 20, 0x00000000
+
 // Botones de control
 CONTROL "", IDB_CALCULATE, "Button", 0x10000000, 285, 80, 80, 25, 0x00000000
-CONTROL "", IDB_QUIT, "Button", 0x10000000, 310, 245, 55, 20, 0x00000000
+CONTROL "", IDB_QUIT, "Button", 0x10000000, 410, 20, 55, 20, 0x00000000
 
 // Barra de estado
-CONTROL "", IDC_STATUS, "Static", 0x50000000, 15, 245, 280, 15, 0x00000000
+CONTROL "", IDC_STATUS, "Static", 0x50000000, 15, 290, 350, 15, 0x00000000
 END
