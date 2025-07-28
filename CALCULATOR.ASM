@@ -77,7 +77,7 @@ includelib	C:\masm32\lib\user32.lib
 includelib	C:\masm32\lib\gdi32.lib
 includelib	C:\masm32\lib\msvcrt.lib
 
-; Incluir nuestro m�dulo de matem�ticas
+
 include mathcore.asm
 
 ; ===============================================
@@ -131,6 +131,10 @@ IDB_TAN         equ 1032
 IDB_LOG         equ 1033
 IDB_LN          equ 1034
 IDB_SQRT        equ 1035
+IDB_LPAREN      equ 1036  ; NUEVO: Paréntesis izquierdo (
+IDB_RPAREN      equ 1037  ; NUEVO: Paréntesis derecho )
+IDB_DECIMAL     equ 1038  ; NUEVO: Punto decimal .
+
 
 MAXSiZE         equ 256
 
@@ -207,7 +211,12 @@ szTanFunc           db "tan(",0
 szLogFunc           db "log(",0
 szLnFunc            db "ln(",0
 szSqrtFunc          db "sqrt(",0
+szAns               db "Ans",0
 
+; NUEVOS: Textos para paréntesis y decimal
+szBtnLParen         db "(",0
+szBtnRParen         db ")",0
+szBtnDecimal        db ".",0
 ; Mensajes de error y estado
 szErrorTitle        db "Error",0
 szErrorDivZero      db "Error: Division por cero",0
@@ -218,7 +227,7 @@ szCompleted         db "Calculo completado",0
 szContinuing        db "Continuando calculo...",0  ; NUEVO
 szEmpty             db 0
 szZero              db "0",0
-szAns               db "Ans",0                      ; NUEVO
+                ; NUEVO
 
 .code
 
@@ -440,7 +449,12 @@ DlgProc proc    hWin    :DWORD,
         invoke SetDlgItemText,hWin,IDB_LOG,ADDR szBtnLog
         invoke SetDlgItemText,hWin,IDB_LN,ADDR szBtnLn
         invoke SetDlgItemText,hWin,IDB_SQRT,ADDR szBtnSqrt
-        
+
+        ; NUEVOS: Inicializar botones de paréntesis y decimal
+        invoke SetDlgItemText,hWin,IDB_LPAREN,ADDR szBtnLParen
+        invoke SetDlgItemText,hWin,IDB_RPAREN,ADDR szBtnRParen
+        invoke SetDlgItemText,hWin,IDB_DECIMAL,ADDR szBtnDecimal
+
     .elseif uMsg == WM_COMMAND
         mov eax,wParam
         mov edx,eax
@@ -517,8 +531,16 @@ DlgProc proc    hWin    :DWORD,
             invoke append_to_input, hWin, ADDR szLnFunc
         .elseif wParam == IDB_SQRT
             invoke append_to_input, hWin, ADDR szSqrtFunc
-        .endif
         
+
+        ; NUEVOS: Manejar paréntesis y decimal
+        .elseif wParam == IDB_LPAREN
+            invoke append_to_input, hWin, ADDR szBtnLParen
+        .elseif wParam == IDB_RPAREN
+            invoke append_to_input, hWin, ADDR szBtnRParen
+        .elseif wParam == IDB_DECIMAL
+            invoke append_to_input, hWin, ADDR szBtnDecimal
+        .endif
     .elseif	uMsg == WM_CLOSE
         invoke EndDialog,hWin,0
     .endif

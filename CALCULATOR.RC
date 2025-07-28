@@ -1,5 +1,5 @@
 // ===============================================
-// RECURSOS DE LA CALCULADORA GR¡FICA
+// RECURSOS DE LA CALCULADORA GRÔøΩFICA
 // Basado en base.rc del MD5 Hasher
 // ===============================================
 
@@ -10,7 +10,7 @@
 #define IDC_GROUPBOX    1004
 #define IDC_STATUS      1005
 
-// Botones numÈricos
+// Botones numÔøΩricos
 #define IDB_NUM_0       1010
 #define IDB_NUM_1       1011
 #define IDB_NUM_2       1012
@@ -31,7 +31,7 @@
 #define IDB_CLEAR       1025
 #define IDB_QUIT        1026
 
-// Funciones cientÌficas
+// Funciones cientÔøΩficas
 #define IDB_SIN         1030
 #define IDB_COS         1031
 #define IDB_TAN         1032
@@ -39,9 +39,14 @@
 #define IDB_LN          1034
 #define IDB_SQRT        1035
 
-// Di·logo principal de la calculadora
+// NUEVOS: Par√©ntesis y decimal
+#define IDB_LPAREN      1036
+#define IDB_RPAREN      1037
+#define IDB_DECIMAL     1038
+
+// DiÔøΩlogo principal de la calculadora
 101 DIALOGEX 0, 0, 380, 280
-CAPTION "Calculadora CientÌfica Gr·fica"
+CAPTION "Calculadora CientÔøΩfica GrÔøΩfica"
 FONT 8, "Segoe UI"
 STYLE 0x80c80880
 EXSTYLE 0x00000000
@@ -55,7 +60,7 @@ CONTROL "", IDC_DISPLAY, "Edit", 0x50000884, 15, 20, 350, 25, 0x00000200
 // Campo de entrada
 CONTROL "", IDC_INPUT, "Edit", 0x50000880, 15, 50, 350, 20, 0x00000200
 
-// Fila 1: Funciones cientÌficas
+// Fila 1: Funciones cientÔøΩficas
 CONTROL "", IDB_SIN, "Button", 0x10000000, 15, 80, 40, 25, 0x00000000
 CONTROL "", IDB_COS, "Button", 0x10000000, 60, 80, 40, 25, 0x00000000
 CONTROL "", IDB_TAN, "Button", 0x10000000, 105, 80, 40, 25, 0x00000000
@@ -63,32 +68,35 @@ CONTROL "", IDB_LOG, "Button", 0x10000000, 150, 80, 40, 25, 0x00000000
 CONTROL "", IDB_LN, "Button", 0x10000000, 195, 80, 40, 25, 0x00000000
 CONTROL "", IDB_SQRT, "Button", 0x10000000, 240, 80, 40, 25, 0x00000000
 
-// Fila 2: N˙meros 7-9 y operadores
+// Fila 2: NÔøΩmeros 7-9 y operadores
 CONTROL "", IDB_NUM_7, "Button", 0x10000000, 15, 115, 40, 25, 0x00000000
 CONTROL "", IDB_NUM_8, "Button", 0x10000000, 60, 115, 40, 25, 0x00000000
 CONTROL "", IDB_NUM_9, "Button", 0x10000000, 105, 115, 40, 25, 0x00000000
 CONTROL "", IDB_DIV, "Button", 0x10000000, 150, 115, 40, 25, 0x00000000
 CONTROL "", IDB_CLEAR, "Button", 0x10000000, 195, 115, 85, 25, 0x00000000
 
-// Fila 3: N˙meros 4-6 y operadores
+// Fila 3: NÔøΩmeros 4-6 y operadores
 CONTROL "", IDB_NUM_4, "Button", 0x10000000, 15, 145, 40, 25, 0x00000000
 CONTROL "", IDB_NUM_5, "Button", 0x10000000, 60, 145, 40, 25, 0x00000000
 CONTROL "", IDB_NUM_6, "Button", 0x10000000, 105, 145, 40, 25, 0x00000000
 CONTROL "", IDB_MUL, "Button", 0x10000000, 150, 145, 40, 25, 0x00000000
 
-// Fila 4: N˙meros 1-3 y operadores
+// Fila 4: NÔøΩmeros 1-3 y operadores
 CONTROL "", IDB_NUM_1, "Button", 0x10000000, 15, 175, 40, 25, 0x00000000
 CONTROL "", IDB_NUM_2, "Button", 0x10000000, 60, 175, 40, 25, 0x00000000
 CONTROL "", IDB_NUM_3, "Button", 0x10000000, 105, 175, 40, 25, 0x00000000
 CONTROL "", IDB_SUB, "Button", 0x10000000, 150, 175, 40, 25, 0x00000000
 
-// Fila 5: N˙mero 0 y operadores
-CONTROL "", IDB_NUM_0, "Button", 0x10000000, 15, 205, 85, 25, 0x00000000
-CONTROL "", IDB_ADD, "Button", 0x10000000, 105, 205, 40, 25, 0x00000000
-CONTROL "", IDB_EQUALS, "Button", 0x10000000, 150, 175, 40, 55, 0x00000000
+// Fila 5: N√∫mero 0, par√©ntesis, decimal y operadores - MODIFICADA
+CONTROL "", IDB_NUM_0, "Button", 0x10000000, 15, 205, 40, 25, 0x00000000
+CONTROL "", IDB_LPAREN, "Button", 0x10000000, 60, 205, 40, 25, 0x00000000
+CONTROL "", IDB_RPAREN, "Button", 0x10000000, 105, 205, 40, 25, 0x00000000
+CONTROL "", IDB_DECIMAL, "Button", 0x10000000, 150, 205, 40, 25, 0x00000000
+CONTROL "", IDB_ADD, "Button", 0x10000000, 195, 205, 40, 25, 0x00000000
+CONTROL "", IDB_EQUALS, "Button", 0x10000000, 240, 175, 40, 55, 0x00000000
 
-// ¡rea de gr·ficos (placeholder)
-CONTROL "¡rea de Gr·ficos", 9999, "Static", 0x50000000, 200, 115, 165, 115, 0x00000000
+// √Årea de gr√°ficos (placeholder)
+CONTROL "√Årea de Gr√°ficos", 9999, "Static", 0x50000000, 290, 115, 75, 115, 0x00000000
 
 // Botones de control
 CONTROL "", IDB_CALCULATE, "Button", 0x10000000, 285, 80, 80, 25, 0x00000000

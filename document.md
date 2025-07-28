@@ -27,6 +27,7 @@ Este proyecto implementa una calculadora científica en Assembly x86 con interfa
 ### Variables de Estado
 
 #### Variables de Interfaz
+
 ```asm
 hInstance           dd ?        ; Handle de la instancia de la aplicación
 szInputBuffer       db 265 dup (?)   ; Buffer de entrada del usuario
@@ -36,6 +37,7 @@ bHasError           db ?        ; Flag de error general
 ```
 
 #### Variables de Memoria de Calculadora
+
 ```asm
 last_result         real8 ?     ; Último resultado calculado
 calculator_state    dd ?        ; Estado actual (NEW, RESULT, OPERATOR, ERROR)
@@ -46,16 +48,17 @@ result_displayed    dd ?        ; 1 si se muestra resultado, 0 si no
 
 ### Estados de la Calculadora
 
-| Estado | Valor | Descripción |
-|--------|-------|-------------|
-| `CALC_STATE_NEW` | 0 | Nueva operación iniciada |
-| `CALC_STATE_RESULT` | 1 | Mostrando resultado, esperando operador |
-| `CALC_STATE_OPERATOR` | 2 | Operador ingresado, esperando número |
-| `CALC_STATE_ERROR` | 3 | Estado de error |
+| Estado                  | Valor | Descripción                            |
+| ----------------------- | ----- | --------------------------------------- |
+| `CALC_STATE_NEW`      | 0     | Nueva operación iniciada               |
+| `CALC_STATE_RESULT`   | 1     | Mostrando resultado, esperando operador |
+| `CALC_STATE_OPERATOR` | 2     | Operador ingresado, esperando número   |
+| `CALC_STATE_ERROR`    | 3     | Estado de error                         |
 
 ### Funciones Principales
 
 #### `start` - Punto de Entrada
+
 ```asm
 Propósito: Inicializar la aplicación y crear el diálogo principal
 Flujo:
@@ -66,6 +69,7 @@ Flujo:
 ```
 
 #### `DlgProc` - Procedimiento del Diálogo
+
 ```asm
 Propósito: Manejar todos los mensajes de la ventana
 Mensajes manejados:
@@ -84,6 +88,7 @@ Botones procesados:
 ### Funciones de Memoria
 
 #### `init_calculator_memory`
+
 ```asm
 Propósito: Inicializar variables de memoria
 Acciones:
@@ -95,6 +100,7 @@ Acciones:
 ```
 
 #### `store_last_result`
+
 ```asm
 Parámetros: value:REAL8
 Propósito: Guardar resultado y cambiar estado
@@ -106,6 +112,7 @@ Acciones:
 ```
 
 #### `handle_operator_with_memory`
+
 ```asm
 Parámetros: hWin:DWORD, lpOperator:DWORD
 Propósito: Manejar operadores considerando memoria
@@ -122,6 +129,7 @@ ENDIF
 ```
 
 #### `handle_equals`
+
 ```asm
 Parámetros: hWin:DWORD
 Propósito: Evaluar expresión y guardar resultado
@@ -133,6 +141,7 @@ Flujo:
 ### Funciones Auxiliares
 
 #### `calculate_expression`
+
 ```asm
 Propósito: Interfaz entre GUI y motor matemático
 Flujo:
@@ -143,6 +152,7 @@ Flujo:
 ```
 
 #### `append_to_input`
+
 ```asm
 Propósito: Agregar texto al campo de entrada
 Lógica especial:
@@ -158,6 +168,7 @@ ENDIF
 ### Variables del Motor
 
 #### Variables de Cálculo
+
 ```asm
 calc_buffer     db 64 dup(?)    ; Buffer temporal
 result_value    real8 ?         ; Resultado de operación
@@ -168,12 +179,14 @@ error_flag      db ?            ; Flag de error matemático
 ```
 
 #### Variables de Pila de Expresiones
+
 ```asm
 expr_stack      real8 32 dup(?) ; Pila para expresiones complejas
 stack_ptr       dd ?            ; Puntero de pila
 ```
 
 #### Constantes de Formato
+
 ```asm
 fmt_str         db "%.6f",0     ; Formato sprintf
 ten_const       real8 10.0      ; Constante 10.0
@@ -183,6 +196,7 @@ zero_string     db "0", 0       ; String para cero
 ### Funciones del Motor
 
 #### `EvaluateExpression` - Función Principal
+
 ```asm
 Parámetros: lpExpression:DWORD
 Retorna: EAX = 1 (éxito), 0 (error)
@@ -194,6 +208,7 @@ Resultado guardado en: result_value
 ```
 
 #### `parse_and_calculate` - Parser Simple
+
 ```asm
 Propósito: Parser básico para expresiones tipo "num1 op num2"
 Algoritmo:
@@ -208,6 +223,7 @@ Algoritmo:
 ### Operaciones Matemáticas
 
 #### Operaciones Básicas
+
 ```asm
 math_add():      operand1 + operand2 → result_value
 math_subtract(): operand1 - operand2 → result_value
@@ -216,6 +232,7 @@ math_divide():   operand1 / operand2 → result_value (con verificación de cero
 ```
 
 #### `math_divide` - División con Verificación
+
 ```asm
 Algoritmo especial:
 1. fld operand2
@@ -227,6 +244,7 @@ Algoritmo especial:
 ### Funciones de Conversión
 
 #### `local_string_to_double`
+
 ```asm
 Parámetros: EAX = puntero a string
 Retorna: Número en pila FPU
@@ -235,6 +253,7 @@ Maneja: signo, parte entera, parte decimal
 ```
 
 #### `format_result`
+
 ```asm
 Parámetros: lpBuffer:DWORD, precision:DWORD
 Propósito: Formatear result_value a string
@@ -292,35 +311,39 @@ Casos especiales:
 ## Variables Compartidas
 
 ### CALCULATOR.ASM → MATHCORE.ASM
+
 - `result_value`: Resultado de operaciones matemáticas
 - `error_flag`: Estado de error del motor matemático
 
 ### Funciones Expuestas por MATHCORE
+
 - `EvaluateExpression()`: Evaluación principal
 - `format_result()`: Formateo de resultados
 
-## Controles de la Interfaz
+Controles de la Interfaz
 
-| Control ID | Tipo | Propósito |
-|------------|------|-----------|
-| `IDC_INPUT` | Edit | Campo de entrada de expresión |
-| `IDC_DISPLAY` | Static | Mostrar resultado |
-| `IDC_STATUS` | Static | Barra de estado |
-| `IDB_NUM_0-9` | Button | Botones numéricos |
-| `IDB_ADD/SUB/MUL/DIV` | Button | Operadores básicos |
-| `IDB_EQUALS` | Button | Calcular resultado |
-| `IDB_CLEAR` | Button | Limpiar todo |
-| `IDB_SIN/COS/TAN` | Button | Funciones trigonométricas |
-| `IDB_LOG/LN/SQRT` | Button | Funciones logarítmicas |
+| Control ID              | Tipo   | Propósito                     |
+| ----------------------- | ------ | ------------------------------ |
+| `IDC_INPUT`           | Edit   | Campo de entrada de expresión |
+| `IDC_DISPLAY`         | Static | Mostrar resultado              |
+| `IDC_STATUS`          | Static | Barra de estado                |
+| `IDB_NUM_0-9`         | Button | Botones numéricos             |
+| `IDB_ADD/SUB/MUL/DIV` | Button | Operadores básicos            |
+| `IDB_EQUALS`          | Button | Calcular resultado             |
+| `IDB_CLEAR`           | Button | Limpiar todo                   |
+| `IDB_SIN/COS/TAN`     | Button | Funciones trigonométricas     |
+| `IDB_LOG/LN/SQRT`     | Button | Funciones logarítmicas        |
 
 ## Manejo de Errores
 
 ### Tipos de Error
+
 1. **Error de sintaxis**: Parser no puede interpretar expresión
 2. **División por cero**: Detectada en `math_divide()`
 3. **Error de conversión**: String no válido en `local_string_to_double()`
 
 ### Propagación de Errores
+
 ```
 MATHCORE error_flag = 1
     ↓
@@ -349,18 +372,21 @@ Estado de calculadora no cambia
 ## Compilación y Dependencias
 
 ### Archivos Requeridos
+
 - `CALCULATOR.ASM`: Módulo principal
 - `MATHCORE.ASM`: Motor matemático
 - `CALCULATOR.RC`: Recursos de la interfaz
 - `build.bat`: Script de compilación
 
 ### Librerías Utilizadas
+
 - `kernel32.lib`: Funciones básicas de Windows
 - `user32.lib`: Interfaz de usuario
 - `gdi32.lib`: Gráficos
 - `msvcrt.lib`: Funciones C runtime (sprintf)
 
 ### Herramientas
+
 - MASM32: Ensamblador Microsoft
 - RC.EXE: Compilador de recursos
 - LINK.EXE: Enlazador
